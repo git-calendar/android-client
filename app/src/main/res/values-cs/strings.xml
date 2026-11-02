@@ -4,6 +4,7 @@
     <string name="view_week">Týden</string>
     <string name="view_month">Měsíc</string>
     <string name="today">Dnes</string>
+    <string name="go_to_date">Přejít na datum</string>
     <string name="calendars_title">Kalendáře</string>
     <string name="settings">Nastavení</string>
     <string name="guide">Návod</string>
@@ -12,8 +13,6 @@
     <string name="open_drawer">Otevřít nabídku</string>
     <string name="previous_period">Předchozí období</string>
     <string name="next_period">Následující období</string>
-    <string name="previous_month">Předchozí měsíc</string>
-    <string name="next_month">Následující měsíc</string>
     <string name="new_event">Nová událost</string>
     <string name="back">Zpět</string>
     <string name="all_day">Celý den</string>

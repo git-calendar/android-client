@@ -1,21 +1,13 @@
 package dev.jotalac.ui.calendar
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,13 +15,12 @@ import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Sync
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -40,7 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,28 +38,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.jotalac.R
 import dev.jotalac.core.Calendar
 import dev.jotalac.core.Tag
-import dev.jotalac.data.CalendarViewType
 import dev.jotalac.data.HiddenTags
 import dev.jotalac.data.Settings
-import dev.jotalac.layout.MonthLayout
-import dev.jotalac.ui.common.currentLocale
-import dev.jotalac.ui.common.narrowName
-import dev.jotalac.ui.common.title
-import dev.jotalac.ui.common.weekDays
+import dev.jotalac.ui.event.DatePickerFor
 import dev.jotalac.ui.theme.TagColor
 import java.time.LocalDate
-import java.time.YearMonth
 
 class DrawerActions(
     val pickDate: (LocalDate) -> Unit,
@@ -85,19 +66,24 @@ class DrawerActions(
 
 @Composable
 fun DrawerContent(
-    view: CalendarViewType,
     date: LocalDate,
     settings: Settings,
     calendars: List<Calendar>,
     hidden: HiddenTags,
     actions: DrawerActions,
 ) {
+    var pickingDate by remember { mutableStateOf(false) }
     Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(8.dp)) {
             Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.size(40.dp))
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
         }
-        MiniMonth(view, date, settings, actions.pickDate)
+        NavigationDrawerItem(
+            label = { Text(stringResource(R.string.go_to_date)) },
+            icon = { Icon(Icons.Outlined.EditCalendar, null) },
+            selected = false,
+            onClick = { pickingDate = true },
+        )
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
@@ -138,6 +124,7 @@ fun DrawerContent(
             onClick = actions.sourceCode,
         )
     }
+    if (pickingDate) DatePickerFor(date, onDismiss = { pickingDate = false }, onPick = actions.pickDate)
 }
 
 @Composable
@@ -208,83 +195,5 @@ private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenT
                 }
             }
         }
-    }
-}
-
-/** Small month picker, ported from web-client MonthSideMap.vue. */
-@Composable
-fun MiniMonth(view: CalendarViewType, date: LocalDate, settings: Settings, onPick: (LocalDate) -> Unit) {
-    val locale = currentLocale()
-    var month by remember { mutableStateOf(YearMonth.from(date)) }
-    val visibleStart = viewStart(view, date, settings.weekStart)
-    val visibleEnd = when (view) {
-        CalendarViewType.Month -> date.withDayOfMonth(date.lengthOfMonth())
-        else -> visibleStart.plusDays(view.days - 1L)
-    }
-    // Follow the shown period, but only jump when it is entirely outside the shown month.
-    LaunchedEffect(view, visibleStart, visibleEnd) {
-        val inside = !visibleEnd.isBefore(month.atDay(1)) && !visibleStart.isAfter(month.atEndOfMonth())
-        if (view == CalendarViewType.Month || !inside) month = YearMonth.from(visibleStart)
-    }
-    val gridStart = MonthLayout.gridStart(month.atDay(1), settings.weekStart)
-    val today = LocalDate.now()
-
-    Column(Modifier.padding(horizontal = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(month.title(locale), Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.titleSmall)
-            IconButton(onClick = { month = month.minusMonths(1) }) {
-                Icon(Icons.Filled.ChevronLeft, stringResource(R.string.previous_month))
-            }
-            IconButton(onClick = { month = month.plusMonths(1) }) {
-                Icon(Icons.Filled.ChevronRight, stringResource(R.string.next_month))
-            }
-        }
-        Row {
-            weekDays(settings.weekStart).forEach {
-                Text(
-                    it.narrowName(locale),
-                    Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        for (week in 0 until MonthLayout.WEEKS) {
-            Row(horizontalArrangement = Arrangement.SpaceEvenly) {
-                for (d in 0 until 7) {
-                    val day = gridStart.plusDays(week * 7L + d)
-                    val inRange = view != CalendarViewType.Month && !day.isBefore(visibleStart) && !day.isAfter(visibleEnd)
-                    val selected = view == CalendarViewType.Month && day == date
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .padding(1.dp)
-                            .clip(CircleShape)
-                            .background(
-                                when {
-                                    day == today -> MaterialTheme.colorScheme.primary
-                                    selected || inRange -> MaterialTheme.colorScheme.secondaryContainer
-                                    else -> Color.Transparent
-                                }
-                            )
-                            .clickable { onPick(day) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            day.dayOfMonth.toString(),
-                            fontSize = 12.sp,
-                            color = when {
-                                day == today -> MaterialTheme.colorScheme.onPrimary
-                                day.month != month.month -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                        )
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(4.dp).width(1.dp))
     }
 }

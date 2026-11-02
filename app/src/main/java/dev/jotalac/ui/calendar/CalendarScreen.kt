@@ -197,7 +197,7 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
     BoxWithConstraints(Modifier.fillMaxSize().then(shortcuts)) {
         val wide = maxWidth >= 840.dp
         val drawer: @Composable () -> Unit = {
-            DrawerContent(view, date, settings, calendars, hidden, drawerActions)
+            DrawerContent(date, settings, calendars, hidden, drawerActions)
         }
         val content: @Composable () -> Unit = {
             Scaffold(
