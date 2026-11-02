@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -329,7 +328,7 @@ private fun DayHeader(dates: List<LocalDate>) {
                     Box(
                         Modifier
                             .size(30.dp)
-                            .clip(CircleShape)
+                            .clip(MaterialTheme.shapes.small)
                             .background(if (isToday) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -754,7 +753,7 @@ private fun GridColumns(
                     // inside the column: the pager clips anything left of the first column
                     Box(
                         Modifier.offset(x = colWidth * todayIndex, y = y - 5.dp).size(10.dp)
-                            .clip(CircleShape).background(primary),
+                            .clip(RoundedCornerShape(3.dp)).background(primary),
                     )
                 }
             }

@@ -79,6 +79,7 @@ fun DrawerContent(
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
         }
         NavigationDrawerItem(
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.go_to_date)) },
             icon = { Icon(Icons.Outlined.EditCalendar, null) },
             selected = false,
@@ -100,24 +101,28 @@ fun DrawerContent(
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         NavigationDrawerItem(
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.sync_now)) },
             icon = { Icon(Icons.Outlined.Sync, null) },
             selected = false,
             onClick = actions.sync,
         )
         NavigationDrawerItem(
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.settings)) },
             icon = { Icon(Icons.Outlined.Settings, null) },
             selected = false,
             onClick = actions.settings,
         )
         NavigationDrawerItem(
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.guide)) },
             icon = { Icon(Icons.AutoMirrored.Outlined.HelpOutline, null) },
             selected = false,
             onClick = actions.guide,
         )
         NavigationDrawerItem(
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.source_code)) },
             icon = { Icon(Icons.Outlined.Code, null) },
             selected = false,

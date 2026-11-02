@@ -253,6 +253,7 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                         }
                     }
                     Button(
+                        shape = MaterialTheme.shapes.small,
                         onClick = { vm.submit(readFile) },
                         enabled = !vm.busy && !(vm.isICalFile && vm.writableCalendars.isEmpty()),
                         modifier = Modifier.padding(end = 8.dp),
@@ -286,7 +287,7 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                         SegmentedButton(
                             selected = vm.mode == m,
                             onClick = { vm.mode = m },
-                            shape = SegmentedButtonDefaults.itemShape(i, CreateMode.entries.size),
+                            shape = SegmentedButtonDefaults.itemShape(i, CreateMode.entries.size, MaterialTheme.shapes.small),
                         ) { Text(stringResource(m.label)) }
                     }
                 }
@@ -296,7 +297,7 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                             SegmentedButton(
                                 selected = vm.icalSource == s,
                                 onClick = { vm.icalSource = s },
-                                shape = SegmentedButtonDefaults.itemShape(i, ICalSource.entries.size),
+                                shape = SegmentedButtonDefaults.itemShape(i, ICalSource.entries.size, MaterialTheme.shapes.small),
                             ) { Text(stringResource(s.label)) }
                         }
                     }
@@ -363,7 +364,7 @@ private fun ICalFileFields(vm: CalendarEditorViewModel, pick: () -> Unit) {
         Text(stringResource(R.string.no_writable_calendars), color = MaterialTheme.colorScheme.error)
         return
     }
-    OutlinedButton(onClick = pick, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(shape = MaterialTheme.shapes.small, onClick = pick, modifier = Modifier.fillMaxWidth()) {
         Icon(Icons.Outlined.FileOpen, null)
         Spacer(Modifier.size(8.dp))
         Text(vm.fileName.ifEmpty { stringResource(R.string.calendar_choose_file) })

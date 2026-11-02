@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -198,7 +197,7 @@ fun MonthView(
                     ) {
                         val isToday = date == today
                         Box(
-                            Modifier.padding(top = 2.dp).align(Alignment.TopCenter).size(20.dp).clip(CircleShape)
+                            Modifier.padding(top = 2.dp).align(Alignment.TopCenter).size(20.dp).clip(MaterialTheme.shapes.small)
                                 .background(if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent),
                             contentAlignment = Alignment.Center,
                         ) {

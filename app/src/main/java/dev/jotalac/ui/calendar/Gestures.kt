@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,10 +14,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -28,7 +28,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import dev.jotalac.ui.theme.contentColorOn
 
@@ -119,11 +118,14 @@ fun Modifier.pinchZoom(onZoom: (Float) -> Unit): Modifier = pointerInput(Unit) {
 }
 
 private val TitleLineHeight = 14.sp
+private val SideLine = 3.dp
 
 /**
- * An event block in the timeline, all-day bar or month grid. The title wraps over every full line
- * that fits, without an ellipsis; the time is shown below it only when a line is left for it.
- * [textScale] shrinks the text, like the zoomed-out timeline does, so more of the title fits.
+ * An event block in the timeline, all-day bar or month grid, styled like the web client: square, the
+ * event color at half strength with a solid line of it on the left (dashed and lighter for a [ghost]
+ * drag preview). The title wraps over every full line that fits, without an ellipsis; the subtitle
+ * is shown below it only when a line is left for it. [textScale] shrinks the text, like the
+ * zoomed-out timeline does, so more of the title fits.
  */
 @Composable
 fun EventChip(
@@ -135,17 +137,27 @@ fun EventChip(
     compact: Boolean = false,
     textScale: Float = 1f,
 ) {
-    val content = contentColorOn(color)
+    // opaque, so overlapping events do not show through each other
+    val fill = color.copy(alpha = if (ghost) 0.2f else 0.5f).compositeOver(MaterialTheme.colorScheme.surface)
+    val content = contentColorOn(fill)
     val titleLineHeight = TitleLineHeight * textScale
-    val shape = RoundedCornerShape(4.dp)
     BoxWithConstraints(
         modifier
-            .clip(shape)
-            .background(color)
-            // Keeps overlapping events of the same color apart.
-            .border(1.dp, MaterialTheme.colorScheme.surface, shape)
-            .alpha(if (ghost) 0.85f else 1f)
-            .padding(horizontal = 4.dp, vertical = if (compact) 1.dp else 2.dp),
+            // a small gap keeps neighboring and stacked events apart
+            .padding(end = 1.dp, bottom = 1.dp)
+            .background(fill)
+            .drawBehind {
+                val width = SideLine.toPx()
+                val dash = 6.dp.toPx()
+                drawLine(
+                    color,
+                    Offset(width / 2, 0f),
+                    Offset(width / 2, size.height),
+                    strokeWidth = width,
+                    pathEffect = if (ghost) PathEffect.dashPathEffect(floatArrayOf(dash, dash)) else null,
+                )
+            }
+            .padding(start = SideLine + 3.dp, end = 3.dp, top = if (compact) 1.dp else 2.dp, bottom = if (compact) 1.dp else 2.dp),
     ) {
         val lineHeight = with(LocalDensity.current) { titleLineHeight.toDp() }
         val lines = if (constraints.hasBoundedHeight) (maxHeight / lineHeight).toInt().coerceAtLeast(1) else Int.MAX_VALUE
@@ -156,7 +168,7 @@ fun EventChip(
                 color = content,
                 fontSize = 12.sp * textScale,
                 lineHeight = titleLineHeight,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = lines,
                 // a single line is cut at the edge rather than at a word, to show as much as possible
                 softWrap = lines > 1,
@@ -167,7 +179,7 @@ fun EventChip(
             if (subtitle != null && titleLines < lines) {
                 Text(
                     subtitle,
-                    color = content.copy(alpha = 0.85f),
+                    color = content.copy(alpha = 0.8f),
                     fontSize = 11.sp * textScale,
                     lineHeight = 13.sp * textScale,
                     maxLines = 1,

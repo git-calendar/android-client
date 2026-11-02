@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
@@ -114,10 +113,10 @@ fun ColorPicker(selected: String, onSelect: (String) -> Unit) {
             Box(
                 Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
+                    .clip(MaterialTheme.shapes.small)
                     .background(option.color)
                     .then(
-                        if (option.id == selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                        if (option.id == selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, MaterialTheme.shapes.small)
                         else Modifier
                     )
                     .clickable(role = Role.RadioButton) { onSelect(option.id) }

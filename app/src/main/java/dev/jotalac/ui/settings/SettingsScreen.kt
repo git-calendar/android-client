@@ -263,6 +263,7 @@ private fun DataManagement(container: AppContainer) {
             modifier = Modifier.fillMaxWidth(),
         ) { zip = it }
         Button(
+            shape = MaterialTheme.shapes.small,
             onClick = { if (zip) createZip.launch(fileName) else createIcs.launch(fileName) },
             enabled = !busy,
             modifier = Modifier.fillMaxWidth(),
@@ -273,6 +274,7 @@ private fun DataManagement(container: AppContainer) {
             color = MaterialTheme.colorScheme.error,
         )
         OutlinedButton(
+            shape = MaterialTheme.shapes.small,
             onClick = { openZip.launch(arrayOf("application/zip", "application/octet-stream")) },
             enabled = !busy,
             modifier = Modifier.fillMaxWidth(),

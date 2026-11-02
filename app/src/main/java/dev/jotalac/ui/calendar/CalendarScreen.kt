@@ -43,6 +43,7 @@ import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -235,7 +236,11 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                     )
                 },
                 floatingActionButton = {
-                    FloatingActionButton(onClick = { actions.create(newEventDraft(vm.defaultCalendar())) }) {
+                    // keeps Material's usual rounded shape, unlike the square theme
+                    FloatingActionButton(
+                        onClick = { actions.create(newEventDraft(vm.defaultCalendar())) },
+                        shape = ShapeDefaults.Large,
+                    ) {
                         Icon(Icons.Filled.Add, stringResource(R.string.new_event))
                     }
                 },
@@ -389,7 +394,7 @@ private fun ViewSwitcher(view: CalendarViewType, wide: Boolean, onSelect: (Calen
                 SegmentedButton(
                     selected = option == view,
                     onClick = { onSelect(option) },
-                    shape = SegmentedButtonDefaults.itemShape(i, CalendarViewType.entries.size),
+                    shape = SegmentedButtonDefaults.itemShape(i, CalendarViewType.entries.size, MaterialTheme.shapes.small),
                 ) { Text(stringResource(option.label)) }
             }
         }

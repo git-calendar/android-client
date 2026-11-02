@@ -138,7 +138,7 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
                         }
                     }
                     if (!vm.readonly) {
-                        Button(onClick = vm::save, enabled = enabled, modifier = Modifier.padding(end = 8.dp)) {
+                        Button(shape = MaterialTheme.shapes.small, onClick = vm::save, enabled = enabled, modifier = Modifier.padding(end = 8.dp)) {
                             Text(stringResource(R.string.save))
                         }
                     }
@@ -469,8 +469,9 @@ private fun CustomRepeatSheet(vm: EventEditorViewModel, onDismiss: () -> Unit) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                OutlinedButton(shape = MaterialTheme.shapes.small, onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                 Button(
+                    shape = MaterialTheme.shapes.small,
                     enabled = canSave,
                     onClick = {
                         vm.repeatTouched = true
@@ -579,7 +580,7 @@ fun <T> Dropdown(
             singleLine = true,
             label = label?.let { { Text(it) } },
             leadingIcon = leading?.let { color ->
-                { Box(Modifier.size(16.dp).clip(CircleShape).background(color)) }
+                { Box(Modifier.size(16.dp).clip(MaterialTheme.shapes.extraSmall).background(color)) }
             },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled).fillMaxWidth(),
