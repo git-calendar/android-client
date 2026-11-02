@@ -32,6 +32,10 @@ android {
                 }
             }
         }
+        debug {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appName"] = "Git-Calendar (Debug)"
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
