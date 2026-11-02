@@ -74,8 +74,11 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** A list entry already formatted for display, so the widget's composition does no work. */
-private data class EventChip(val title: String, val time: String?, val color: Color)
+/**
+ * A list entry already formatted for display, so the widget's composition does no work. A null
+ * [color] marks today's "Nothing scheduled" placeholder, drawn in the theme's neutral colors.
+ */
+private data class EventChip(val title: String, val time: String?, val color: Color?)
 
 /**
  * One list item: a day's label beside up to [ScheduleWidget.CHIPS_PER_BLOCK] of its events.
@@ -101,7 +104,8 @@ private data class ScheduleState(
 
 /**
  * Home-screen list of upcoming events, modelled on Google Calendar's schedule widget: today's date
- * and a new-event button on top, then the next [DAYS] days with events, each day labelled once.
+ * and a new-event button on top, then today (with "Nothing scheduled" when it has no events left)
+ * and the days with events in the next [DAYS] days, each day labelled once.
  * Tapping an event or a day opens the app on that day.
  */
 class ScheduleWidget : GlanceAppWidget() {
@@ -174,7 +178,20 @@ class ScheduleWidget : GlanceAppWidget() {
                 )
             }
         }
-        return ScheduleState(now.toLocalDate(), header, headerWeekday, blocks)
+        val today = now.toLocalDate()
+        // Like Google Calendar, today is always listed, even when it has no events left.
+        val todayBlock = if (blocks.firstOrNull()?.day == today) emptyList() else listOf(
+            DayBlock(
+                id = today.toEpochDay() * 100,
+                day = today,
+                month = null,
+                weekday = today.format(weekdayFormat),
+                dayNumber = today.dayOfMonth.toString(),
+                isToday = true,
+                chips = listOf(EventChip(context.getString(R.string.widget_nothing_scheduled), null, null)),
+            )
+        )
+        return ScheduleState(today, header, headerWeekday, todayBlock + blocks)
     }
 
     private suspend fun upcoming(container: AppContainer, now: ZonedDateTime): List<ScheduleEntry> {
@@ -229,26 +246,16 @@ class ScheduleWidget : GlanceAppWidget() {
             }
             Spacer(GlanceModifier.height(8.dp))
 
-            if (state.blocks.isEmpty()) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = GlanceModifier.fillMaxSize().clickable(openDay(context, today)),
-                ) {
-                    Text(
-                        context.getString(R.string.widget_no_events, DAYS),
-                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp),
-                    )
-                }
-            } else {
-                LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
-                    items(state.blocks, itemId = { it.id }) { block -> DayRow(context, block) }
-                }
+            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
+                items(state.blocks, itemId = { it.id }) { block -> DayRow(context, block) }
             }
         }
     }
 
     @Composable
     private fun DayRow(context: Context, block: DayBlock) {
+        // today's lone "Nothing scheduled" row is centered on the date; events line up with the weekday
+        val placeholder = block.chips.singleOrNull()?.let { it.color == null } == true
         Column(modifier = GlanceModifier.fillMaxWidth()) {
             if (block.month != null) {
                 Text(
@@ -262,9 +269,11 @@ class ScheduleWidget : GlanceAppWidget() {
                 )
             }
             Row(
+                verticalAlignment = if (placeholder) Alignment.CenterVertically else Alignment.Top,
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .padding(top = if (block.weekday != null) 6.dp else 0.dp)
+                    // the placeholder's row ends at the date circle, so it takes the gap its chip would leave
+                    .padding(top = if (block.weekday != null) 6.dp else 0.dp, bottom = if (placeholder) 4.dp else 0.dp)
                     .clickable(openDay(context, block.day)),
             ) {
                 // weekday and day number beside the day's first event, with today's number circled like Google's
@@ -273,7 +282,9 @@ class ScheduleWidget : GlanceAppWidget() {
                 }
                 Column(modifier = GlanceModifier.defaultWeight()) {
                     block.chips.forEach { chip ->
-                        Box(modifier = GlanceModifier.fillMaxWidth().padding(bottom = 4.dp)) { Chip(chip) }
+                        Box(modifier = GlanceModifier.fillMaxWidth().padding(bottom = if (placeholder) 0.dp else 4.dp)) {
+                            Chip(chip)
+                        }
                     }
                 }
             }
@@ -282,11 +293,12 @@ class ScheduleWidget : GlanceAppWidget() {
 
     @Composable
     private fun Chip(chip: EventChip) {
-        val textColor = ColorProvider(contentColorOn(chip.color))
+        val background = chip.color?.let { ColorProvider(it) } ?: GlanceTheme.colors.surfaceVariant
+        val textColor = chip.color?.let { ColorProvider(contentColorOn(it)) } ?: GlanceTheme.colors.onSurfaceVariant
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .background(chip.color)
+                .background(background)
                 .cornerRadius(10.dp)
                 .padding(horizontal = 10.dp, vertical = 6.dp),
         ) {

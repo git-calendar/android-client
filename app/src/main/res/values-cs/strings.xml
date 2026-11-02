@@ -212,5 +212,5 @@
     <!-- Home-screen widget -->
     <string name="widget_label">Nadcházející události</string>
     <string name="widget_description">Vaše události na příštích 30 dní</string>
-    <string name="widget_no_events">Žádné události v příštích %1$d dnech</string>
+    <string name="widget_nothing_scheduled">Nic naplánováno</string>
 </resources>

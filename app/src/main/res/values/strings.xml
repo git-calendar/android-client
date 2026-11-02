@@ -229,5 +229,5 @@
     <!-- Home-screen widget -->
     <string name="widget_label">Upcoming events</string>
     <string name="widget_description">Your events for the next 30 days</string>
-    <string name="widget_no_events">No events in the next %1$d days</string>
+    <string name="widget_nothing_scheduled">Nothing scheduled</string>
 </resources>
