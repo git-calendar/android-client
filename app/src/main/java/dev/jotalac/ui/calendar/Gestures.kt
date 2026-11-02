@@ -123,6 +123,7 @@ private val TitleLineHeight = 14.sp
 /**
  * An event block in the timeline, all-day bar or month grid. The title wraps over every full line
  * that fits, without an ellipsis; the time is shown below it only when a line is left for it.
+ * [textScale] shrinks the text, like the zoomed-out timeline does, so more of the title fits.
  */
 @Composable
 fun EventChip(
@@ -132,8 +133,10 @@ fun EventChip(
     modifier: Modifier = Modifier,
     ghost: Boolean = false,
     compact: Boolean = false,
+    textScale: Float = 1f,
 ) {
     val content = contentColorOn(color)
+    val titleLineHeight = TitleLineHeight * textScale
     val shape = RoundedCornerShape(4.dp)
     BoxWithConstraints(
         modifier
@@ -144,15 +147,15 @@ fun EventChip(
             .alpha(if (ghost) 0.85f else 1f)
             .padding(horizontal = 4.dp, vertical = if (compact) 1.dp else 2.dp),
     ) {
-        val lineHeight = with(LocalDensity.current) { TitleLineHeight.toDp() }
+        val lineHeight = with(LocalDensity.current) { titleLineHeight.toDp() }
         val lines = if (constraints.hasBoundedHeight) (maxHeight / lineHeight).toInt().coerceAtLeast(1) else Int.MAX_VALUE
         var titleLines by remember { mutableIntStateOf(1) }
         Column {
             Text(
                 title,
                 color = content,
-                fontSize = 12.sp,
-                lineHeight = TitleLineHeight,
+                fontSize = 12.sp * textScale,
+                lineHeight = titleLineHeight,
                 fontWeight = FontWeight.Medium,
                 maxLines = lines,
                 // a single line is cut at the edge rather than at a word, to show as much as possible
@@ -165,8 +168,8 @@ fun EventChip(
                 Text(
                     subtitle,
                     color = content.copy(alpha = 0.85f),
-                    fontSize = 11.sp,
-                    lineHeight = 13.sp,
+                    fontSize = 11.sp * textScale,
+                    lineHeight = 13.sp * textScale,
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Clip,

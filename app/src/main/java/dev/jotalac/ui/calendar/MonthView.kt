@@ -42,7 +42,6 @@ import dev.jotalac.data.Settings
 import dev.jotalac.data.withPendingEdits
 import dev.jotalac.layout.MonthLayout
 import dev.jotalac.ui.common.currentLocale
-import dev.jotalac.ui.common.rememberTimeFormatter
 import dev.jotalac.ui.common.shortName
 import dev.jotalac.ui.common.weekDays
 import dev.jotalac.ui.theme.GitRed
@@ -85,7 +84,6 @@ fun MonthView(
     }
     val density = LocalDensity.current
     val haptics = LocalHapticFeedback.current
-    val times = rememberTimeFormatter(settings)
     var drag by remember { mutableStateOf<DayDrag?>(null) }
     val today = LocalDate.now()
     val gridColor = MaterialTheme.colorScheme.outlineVariant
@@ -231,7 +229,7 @@ fun MonthView(
                     layout.chips.forEach { chip ->
                         EventChip(
                             title = chip.event.title,
-                            subtitle = times.range(chip.event.from, chip.event.to),
+                            subtitle = chip.event.location.trim().ifEmpty { null },
                             color = TagColor.of(vm.colorId(chip.event)).color,
                             compact = chip.compact,
                             modifier = Modifier

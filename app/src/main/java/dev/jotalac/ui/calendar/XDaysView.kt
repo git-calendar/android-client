@@ -72,7 +72,6 @@ import dev.jotalac.layout.DragMath
 import dev.jotalac.layout.HourRange
 import dev.jotalac.layout.TimelineLayout
 import dev.jotalac.layout.TimelineSplit
-import dev.jotalac.layout.isWholeDay
 import dev.jotalac.ui.common.TimeFormatter
 import dev.jotalac.ui.common.currentLocale
 import dev.jotalac.ui.common.narrowName
@@ -99,6 +98,10 @@ private val CoverStep = 8.dp
 private val MinRight = 8.dp
 private val ResizeEdge = 14.dp
 private val NowLabelHeight = 16.dp
+
+/** Hour height from which event text has its full size; zoomed out further it shrinks, down to [MinTextScale]. */
+private val FullTextHourHeight = 56.dp
+private const val MinTextScale = 0.75f
 
 /** Callbacks shared by every calendar view. */
 class CalendarActions(
@@ -295,7 +298,6 @@ fun XDaysView(
     }
     val split = remember(events, start, days, configured) { TimelineSplit.split(events, start, days, configured) }
     val dates = remember(start, days) { List(days) { start.plusDays(it.toLong()) } }
-    val times = rememberTimeFormatter(settings)
 
     DisposableEffect(timeline, page) {
         onDispose { timeline.allDayHeights.remove(page) }
@@ -305,7 +307,7 @@ fun XDaysView(
         DayHeader(dates)
         AllDayBar(dates, split.allDay, page, timeline, frame, vm, actions)
         HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
-        TimedGrid(dates, split.timed, frame, timeline, settings, vm, times, actions, Modifier.weight(1f))
+        TimedGrid(dates, split.timed, frame, timeline, settings, vm, actions, Modifier.weight(1f))
     }
 }
 
@@ -534,7 +536,6 @@ private fun TimedGrid(
     timeline: TimelineState,
     settings: Settings,
     vm: CalendarViewModel,
-    times: TimeFormatter,
     actions: CalendarActions,
     modifier: Modifier,
 ) {
@@ -546,7 +547,7 @@ private fun TimedGrid(
             .verticalScroll(timeline.scroll),
     ) {
         Box(Modifier.fillMaxWidth().height(frame.gridHeight)) {
-            GridColumns(dates, columns, frame.range, settings, vm, times, actions, frame.gridHeight, gridColor)
+            GridColumns(dates, columns, frame.range, settings, vm, actions, frame.gridHeight, gridColor)
         }
     }
 }
@@ -575,7 +576,6 @@ private fun GridColumns(
     range: HourRange,
     settings: Settings,
     vm: CalendarViewModel,
-    times: TimeFormatter,
     actions: CalendarActions,
     gridHeight: Dp,
     gridColor: androidx.compose.ui.graphics.Color,
@@ -584,6 +584,8 @@ private fun GridColumns(
     val haptics = LocalHapticFeedback.current
     val zone = ZoneId.systemDefault()
     val math = remember(settings.dragPrecisionMinutes, range) { DragMath(settings.dragPrecisionMinutes, range) }
+    // zoomed out, event text shrinks a little so short events still show a readable part of their title
+    val textScale = (gridHeight / range.hours / FullTextHourHeight).coerceIn(MinTextScale, 1f)
     var drag by remember { mutableStateOf<TimedDrag?>(null) }
     val today = LocalDate.now()
     val nowTime = currentTime()
@@ -737,7 +739,7 @@ private fun GridColumns(
             }
             placed.forEach { (event, rect) ->
                 if (event === hiddenEvent) return@forEach
-                TimedEventChip(event, rect, vm, times)
+                TimedEventChip(event, rect, vm, textScale)
             }
 
             // Current time line across the grid, with a dot in today's column; the time is in the hour column.
@@ -769,23 +771,31 @@ private fun GridColumns(
                 val top = gridMinutes(preview.from, d.day).toFloat() / math.totalMinutes * heightPx
                 val bottom = gridMinutes(preview.to, d.day).toFloat() / math.totalMinutes * heightPx
                 val rect = Rect(d.day * colPx + 1f, top, (d.day + 1) * colPx - 2f, bottom)
-                TimedEventChip(preview, rect, vm, times, preview = true)
+                TimedEventChip(preview, rect, vm, textScale, preview = true)
             }
         }
     }
 }
 
 @Composable
-private fun TimedEventChip(event: Event, rect: Rect, vm: CalendarViewModel, times: TimeFormatter, preview: Boolean = false) {
+private fun TimedEventChip(
+    event: Event,
+    rect: Rect,
+    vm: CalendarViewModel,
+    textScale: Float,
+    preview: Boolean = false,
+) {
     val density = LocalDensity.current
     val color = if (preview && event.id == null) GitRed else TagColor.of(vm.colorId(event)).color
     val heightDp = with(density) { (rect.height - 2f).coerceAtLeast(1f).toDp() }
     EventChip(
         title = event.title.ifEmpty { stringResource(R.string.event_new) },
-        subtitle = if (event.isWholeDay()) null else times.range(event.from, event.to),
+        // the location rather than the time, which the chip's position already shows
+        subtitle = event.location.trim().ifEmpty { null },
         color = color,
         ghost = preview,
-        compact = heightDp < 30.dp,
+        compact = heightDp < 30.dp * textScale,
+        textScale = textScale,
         modifier = Modifier
             .offset { IntOffset(rect.left.roundToInt(), (rect.top + 1f).roundToInt()) }
             .size(with(density) { rect.width.toDp() }, heightDp),
