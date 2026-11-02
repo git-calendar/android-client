@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.lerp
 import kotlin.math.abs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -96,6 +98,7 @@ private val ColumnGap = 4.dp
 private val CoverStep = 8.dp
 private val MinRight = 8.dp
 private val ResizeEdge = 14.dp
+private val NowLabelHeight = 16.dp
 
 /** Callbacks shared by every calendar view. */
 class CalendarActions(
@@ -196,7 +199,52 @@ private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: Scrol
         HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
         Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll)) {
             HourGutter(frame.range, times, frame.gridHeight)
+            NowLabel(frame, times)
         }
+    }
+}
+
+/** The current time, updated when the minute changes. */
+@Composable
+private fun currentTime(): LocalTime {
+    val now by produceState(LocalTime.now()) {
+        while (true) {
+            value = LocalTime.now()
+            delay(60_000 - System.currentTimeMillis() % 60_000)
+        }
+    }
+    return now
+}
+
+/** Minutes from the top of the grid to [time], or null when [time] is outside [range]. */
+private fun minutesIntoGrid(time: LocalTime, range: HourRange): Long? =
+    (ChronoUnit.MINUTES.between(LocalTime.MIDNIGHT, time) - range.startHour * 60L).takeIf { it in 0..(range.hours * 60L) }
+
+/** The current time in the hour column, at the grid's now line, like the web client. */
+@Composable
+private fun BoxScope.NowLabel(frame: TimelineFrame, times: TimeFormatter) {
+    val now = currentTime()
+    val minutes = minutesIntoGrid(now, frame.range) ?: return
+    val y = frame.gridHeight * (minutes.toFloat() / (frame.range.hours * 60))
+    Box(
+        Modifier
+            .align(Alignment.TopEnd)
+            .offset(y = y - NowLabelHeight / 2)
+            .padding(end = 2.dp)
+            .height(NowLabelHeight)
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(horizontal = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            times.shortTime(now),
+            fontSize = 10.sp,
+            lineHeight = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onPrimary,
+            maxLines = 1,
+        )
     }
 }
 
@@ -538,12 +586,7 @@ private fun GridColumns(
     val math = remember(settings.dragPrecisionMinutes, range) { DragMath(settings.dragPrecisionMinutes, range) }
     var drag by remember { mutableStateOf<TimedDrag?>(null) }
     val today = LocalDate.now()
-    val nowTime by produceState(LocalTime.now()) {
-        while (true) {
-            value = LocalTime.now()
-            delay(60_000)
-        }
-    }
+    val nowTime = currentTime()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
@@ -697,9 +740,8 @@ private fun GridColumns(
                 TimedEventChip(event, rect, vm, times)
             }
 
-            // Current time line across the grid, with a dot in today's column.
-            val nowMinutes = ChronoUnit.MINUTES.between(LocalTime.of(0, 0), nowTime) - range.startHour * 60L
-            if (nowMinutes in 0..(range.hours * 60L)) {
+            // Current time line across the grid, with a dot in today's column; the time is in the hour column.
+            minutesIntoGrid(nowTime, range)?.let { nowMinutes ->
                 val y = gridHeight * (nowMinutes.toFloat() / (range.hours * 60))
                 Box(Modifier.offset(y = y - 1.dp).fillMaxWidth().height(2.dp).background(primary.copy(alpha = 0.35f)))
                 if (todayIndex >= 0) {
@@ -707,8 +749,9 @@ private fun GridColumns(
                         Modifier.offset(x = colWidth * todayIndex, y = y - 1.dp).width(colWidth).height(2.dp)
                             .background(primary),
                     )
+                    // inside the column: the pager clips anything left of the first column
                     Box(
-                        Modifier.offset(x = colWidth * todayIndex - 5.dp, y = y - 5.dp).size(10.dp)
+                        Modifier.offset(x = colWidth * todayIndex, y = y - 5.dp).size(10.dp)
                             .clip(CircleShape).background(primary),
                     )
                 }

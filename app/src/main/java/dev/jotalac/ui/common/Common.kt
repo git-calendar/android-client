@@ -88,6 +88,9 @@ class TimeFormatter(private val is24: Boolean, private val locale: Locale) {
     fun time(time: LocalTime): String = time.format(formatter)
     fun range(from: ZonedDateTime, to: ZonedDateTime) = "${time(from)} - ${time(to)}"
 
+    /** A time without AM/PM for tight spots like the hour column: "14:30" or "2:30". */
+    fun shortTime(time: LocalTime): String = if (is24) time(time) else time.format(DateTimeFormatter.ofPattern("h:mm", locale))
+
     /** Hour gutter label: "06:00" or "6 AM". */
     fun hourLabel(hour: Int): String {
         val h = ((hour % 24) + 24) % 24
