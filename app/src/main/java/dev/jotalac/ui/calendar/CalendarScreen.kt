@@ -26,7 +26,7 @@ import androidx.compose.material.icons.outlined.CalendarViewWeek
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Sync
-import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.ViewDay
 import androidx.compose.material.icons.outlined.ViewWeek
 import androidx.compose.material3.DrawerValue
@@ -77,6 +77,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import java.time.LocalDate
 import dev.jotalac.R
 import dev.jotalac.core.Calendar
 import dev.jotalac.data.CalendarViewType
@@ -87,6 +97,7 @@ import dev.jotalac.ui.common.title
 import dev.jotalac.ui.common.userMessage
 import kotlinx.coroutines.launch
 import java.time.YearMonth
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val PAGE_COUNT = 20_000
 private const val INITIAL_PAGE = PAGE_COUNT / 2
@@ -216,7 +227,7 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                                 }
                             }
                             IconButton(onClick = vm::today) {
-                                Icon(Icons.Outlined.Today, stringResource(R.string.today))
+                                TodayIcon(stringResource(R.string.today))
                             }
                             ViewSwitcher(view, wide, vm::setView)
                         },
@@ -300,6 +311,29 @@ private fun CalendarPager(
                 XDaysView(startOf(page), view.days, page, timeline, frame, vm, settings, revision, hidden, actions)
             }
         }
+    }
+}
+
+/** A calendar page with today's day of the month, the usual "go to today" button of calendar apps. */
+@Composable
+private fun TodayIcon(contentDescription: String) {
+    val today by produceState(LocalDate.now()) {
+        while (true) {
+            delay(60_000.milliseconds)
+            value = LocalDate.now()
+        }
+    }
+    Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        Icon(Icons.Outlined.CalendarToday, contentDescription)
+        Text(
+            today.dayOfMonth.toString(),
+            // centered in the page below the calendar's top bar; fixed size so it fits at any font scale
+            Modifier.padding(top = 7.dp).clearAndSetSemantics {},
+            fontSize = (10 / LocalDensity.current.fontScale).sp,
+            lineHeight = (10 / LocalDensity.current.fontScale).sp,
+            fontWeight = FontWeight.Bold,
+            color = LocalContentColor.current,
+        )
     }
 }
 
