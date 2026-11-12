@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.jotalac.R
@@ -204,6 +206,9 @@ fun MonthView(
                             Text(
                                 date.dayOfMonth.toString(),
                                 fontSize = 11.sp,
+                                // the inherited 24 sp line would push the number below the square's center
+                                lineHeight = 11.sp,
+                                style = LocalTextStyle.current.copy(lineHeightStyle = CenteredLine),
                                 color = when {
                                     isToday -> MaterialTheme.colorScheme.onPrimary
                                     inMonth -> MaterialTheme.colorScheme.onSurface
@@ -264,3 +269,5 @@ fun MonthView(
         }
     }
 }
+
+private val CenteredLine = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
