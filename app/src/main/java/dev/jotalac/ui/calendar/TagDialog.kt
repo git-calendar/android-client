@@ -83,7 +83,7 @@ fun TagDialog(
                     onDismiss()
                 }
             })
-            FormButton(stringResource(R.string.cancel), onDismiss)
+            FormButton(stringResource(R.string.close), onDismiss)
             if (target.tag != null && !untagged) {
                 FormButton(stringResource(R.string.delete), { onDelete(); onDismiss() }, danger = true)
             }
