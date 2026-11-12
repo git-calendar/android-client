@@ -192,10 +192,13 @@ private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: Scrol
         Spacer(Modifier.height(HeaderHeight))
         Text(
             stringResource(R.string.all_day),
-            Modifier.fillMaxWidth().layoutHeight(frame.allDayHeight).padding(top = 4.dp, end = 4.dp),
+            Modifier.fillMaxWidth().layoutHeight(frame.allDayHeight).padding(top = 2.dp, end = 4.dp),
             style = MaterialTheme.typography.labelSmall,
             textAlign = TextAlign.End,
             fontSize = 10.sp,
+            // tight lines, so a label wrapped in the narrow gutter ("Celý den") fits the one-row bar
+            lineHeight = 11.sp,
+            maxLines = 2,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
