@@ -1,5 +1,8 @@
 package dev.jotalac.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,7 +51,13 @@ fun AppNavigation(container: AppContainer) {
         }
     }
 
-    NavHost(nav, startDestination = CalendarRoute) {
+    // the back gesture crossfades like every other navigation (NavHost's default fade) instead of shrinking the screen
+    NavHost(
+        nav,
+        startDestination = CalendarRoute,
+        predictivePopEnterTransition = { fadeIn(tween(700)) },
+        predictivePopExitTransition = { fadeOut(tween(700)) },
+    ) {
         composable<CalendarRoute> {
             val vm = viewModel { CalendarViewModel(container, createSavedStateHandle()) }
             CalendarScreen(
