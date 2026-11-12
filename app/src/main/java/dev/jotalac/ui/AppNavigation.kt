@@ -51,12 +51,16 @@ fun AppNavigation(container: AppContainer) {
         }
     }
 
-    // the back gesture crossfades like every other navigation (NavHost's default fade) instead of shrinking the screen
+    // every navigation, including the back gesture, is a quick crossfade (the back gesture would otherwise shrink the screen)
     NavHost(
         nav,
         startDestination = CalendarRoute,
-        predictivePopEnterTransition = { fadeIn(tween(700)) },
-        predictivePopExitTransition = { fadeOut(tween(700)) },
+        enterTransition = { fadeIn(tween(200)) },
+        exitTransition = { fadeOut(tween(200)) },
+        popEnterTransition = { fadeIn(tween(200)) },
+        popExitTransition = { fadeOut(tween(200)) },
+        predictivePopEnterTransition = { fadeIn(tween(200)) },
+        predictivePopExitTransition = { fadeOut(tween(200)) },
     ) {
         composable<CalendarRoute> {
             val vm = viewModel { CalendarViewModel(container, createSavedStateHandle()) }
