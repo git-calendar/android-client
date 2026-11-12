@@ -164,7 +164,6 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
         toggleTag = vm::setTagHidden,
         settings = { closeDrawer(); nav.settings() },
         guide = { closeDrawer(); nav.guide() },
-        sync = { vm.requestSync(); closeDrawer() },
         sourceCode = {
             context.startActivity(Intent(Intent.ACTION_VIEW, "https://github.com/git-calendar".toUri()))
         },

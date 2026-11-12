@@ -20,7 +20,6 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -60,7 +59,6 @@ class DrawerActions(
     val toggleTag: (calendar: String, tagId: String?, hidden: Boolean) -> Unit,
     val settings: () -> Unit,
     val guide: () -> Unit,
-    val sync: () -> Unit,
     val sourceCode: () -> Unit,
 )
 
@@ -100,13 +98,6 @@ fun DrawerContent(
         calendars.forEach { CalendarItem(it, settings, hidden, actions) }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        NavigationDrawerItem(
-            shape = MaterialTheme.shapes.small,
-            label = { Text(stringResource(R.string.sync_now)) },
-            icon = { Icon(Icons.Outlined.Sync, null) },
-            selected = false,
-            onClick = actions.sync,
-        )
         NavigationDrawerItem(
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.settings)) },
