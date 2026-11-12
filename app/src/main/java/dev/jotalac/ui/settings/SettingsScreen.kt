@@ -1,5 +1,6 @@
 package dev.jotalac.ui.settings
 
+import dev.jotalac.ui.theme.AppIcons
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,9 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -84,7 +82,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onFiles: () -> U
                 title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        Icon(AppIcons.ArrowLeft, stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -180,7 +178,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onFiles: () -> U
             Section(stringResource(R.string.settings_advanced))
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 FormButton(
-                    stringResource(R.string.settings_files), onFiles, Modifier.fillMaxWidth(), icon = Icons.Outlined.FolderOpen,
+                    stringResource(R.string.settings_files), onFiles, Modifier.fillMaxWidth(), icon = AppIcons.Folder,
                 )
                 FormHint(stringResource(R.string.settings_files_summary))
             }

@@ -1,5 +1,6 @@
 package dev.jotalac.ui.event
 
+import dev.jotalac.ui.theme.AppIcons
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.widget.Toast
@@ -22,13 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.Place
-import androidx.compose.material.icons.outlined.VideoCall
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -132,7 +126,7 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.close)) }
+                    IconButton(onClick = onClose) { Icon(AppIcons.X, stringResource(R.string.close)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -488,7 +482,7 @@ private fun ReminderFields(vm: EventEditorViewModel, enabled: Boolean, onAdd: ()
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.reminders), style = formTextStyle())
             if (enabled && vm.reminders.size < REMINDER_PRESETS.size) {
-                FormIconButton(Icons.Outlined.Add, stringResource(R.string.reminder_add), onAdd)
+                FormIconButton(AppIcons.Plus, stringResource(R.string.reminder_add), onAdd)
             }
         }
         vm.reminders.toList().forEachIndexed { index, minutes ->
@@ -627,7 +621,7 @@ private fun LocationField(vm: EventEditorViewModel, enabled: Boolean) {
             trailing = if (vm.location.isBlank()) null else {
                 {
                     FieldAction(
-                        if (isLink) Icons.Outlined.VideoCall else Icons.Outlined.Map,
+                        if (isLink) AppIcons.Video else AppIcons.Map,
                         stringResource(if (isLink) R.string.location_join else R.string.location_open_map),
                     ) {
                         val intent = EventLocation.intent(vm.location) ?: return@FieldAction
@@ -651,13 +645,13 @@ private fun LocationField(vm: EventEditorViewModel, enabled: Boolean) {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             past.forEach { suggestion ->
-                LocationSuggestion(suggestion, Icons.Outlined.History) {
+                LocationSuggestion(suggestion, AppIcons.Clock) {
                     vm.pickLocation(suggestion)
                     closedAt = suggestion
                 }
             }
             addresses.forEach { suggestion ->
-                LocationSuggestion(suggestion, Icons.Outlined.Place) {
+                LocationSuggestion(suggestion, AppIcons.MapPin) {
                     vm.pickLocation(suggestion)
                     closedAt = suggestion
                 }

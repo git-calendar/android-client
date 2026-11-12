@@ -1,5 +1,6 @@
 package dev.jotalac.ui.calendars
 
+import dev.jotalac.ui.theme.AppIcons
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,11 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.FileOpen
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -246,7 +242,7 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.close)) }
+                    IconButton(onClick = onClose) { Icon(AppIcons.X, stringResource(R.string.close)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -360,7 +356,7 @@ private fun ICalFileFields(vm: CalendarEditorViewModel, pick: () -> Unit) {
     }
     FormButton(
         vm.fileName.ifEmpty { stringResource(R.string.calendar_choose_file) }, pick, Modifier.fillMaxWidth(),
-        icon = Icons.Outlined.FileOpen,
+        icon = AppIcons.File,
     )
     val untagged = stringResource(R.string.tag_untagged)
     val tags = vm.tagsOf(vm.destination)
@@ -415,7 +411,7 @@ private fun SecretField(value: String, onChange: (String) -> Unit, placeholder: 
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
         trailing = {
-            FieldAction(if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, null) { visible = !visible }
+            FieldAction(if (visible) AppIcons.EyeOff else AppIcons.Eye, null) { visible = !visible }
         },
         modifier = modifier,
     )

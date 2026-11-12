@@ -1,5 +1,6 @@
 package dev.jotalac.ui.calendar
 
+import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -12,17 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.EditCalendar
-import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.PhoneAndroid
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -88,7 +78,7 @@ fun DrawerContent(
         NavigationDrawerItem(
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.go_to_date)) },
-            icon = { Icon(Icons.Outlined.EditCalendar, null) },
+            icon = { Icon(AppIcons.Calendar, null) },
             selected = false,
             onClick = { pickingDate = true },
         )
@@ -101,7 +91,7 @@ fun DrawerContent(
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = actions.createCalendar) {
-                Icon(Icons.Outlined.Add, stringResource(R.string.create_calendar))
+                Icon(AppIcons.Plus, stringResource(R.string.create_calendar))
             }
         }
         calendars.forEach { CalendarItem(it, settings, hidden, actions) }
@@ -110,21 +100,21 @@ fun DrawerContent(
         NavigationDrawerItem(
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.settings)) },
-            icon = { Icon(Icons.Outlined.Settings, null) },
+            icon = { Icon(AppIcons.Settings, null) },
             selected = false,
             onClick = actions.settings,
         )
         NavigationDrawerItem(
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.guide)) },
-            icon = { Icon(Icons.AutoMirrored.Outlined.HelpOutline, null) },
+            icon = { Icon(AppIcons.HelpCircle, null) },
             selected = false,
             onClick = actions.guide,
         )
         NavigationDrawerItem(
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.source_code)) },
-            icon = { Icon(Icons.Outlined.Code, null) },
+            icon = { Icon(AppIcons.Github, null) },
             selected = false,
             onClick = actions.sourceCode,
         )
@@ -138,10 +128,10 @@ private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenT
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
             Icon(
                 when {
-                    calendar.isICal -> Icons.Outlined.Link
+                    calendar.isICal -> AppIcons.Link
                     // no remote: stored only on this device
-                    calendar.remoteUrl.isEmpty() -> Icons.Outlined.PhoneAndroid
-                    else -> Icons.Outlined.AccountTree
+                    calendar.remoteUrl.isEmpty() -> AppIcons.Smartphone
+                    else -> AppIcons.GitBranch
                 },
                 null,
                 Modifier.size(18.dp),
@@ -156,15 +146,15 @@ private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenT
                 overflow = TextOverflow.Ellipsis,
             )
             if (calendar.encrypted) {
-                Icon(Icons.Outlined.Lock, stringResource(R.string.calendar_is_encrypted), Modifier.size(16.dp))
+                Icon(AppIcons.Lock, stringResource(R.string.calendar_is_encrypted), Modifier.size(16.dp))
             }
             if (calendar.isWritable) {
                 IconButton(onClick = { actions.editTag(TagEditTarget(calendar.name, null)) }) {
-                    Icon(Icons.Outlined.Add, stringResource(R.string.create_tag, calendar.name), Modifier.size(20.dp))
+                    Icon(AppIcons.Plus, stringResource(R.string.create_tag, calendar.name), Modifier.size(20.dp))
                 }
             }
             IconButton(onClick = { actions.editCalendar(calendar) }) {
-                Icon(Icons.Outlined.Edit, stringResource(R.string.edit_calendar, calendar.name), Modifier.size(20.dp))
+                Icon(AppIcons.Edit, stringResource(R.string.edit_calendar, calendar.name), Modifier.size(20.dp))
             }
         }
         val untagged = Tag(id = "", name = stringResource(R.string.tag_untagged), color = settings.untaggedColors[calendar.name] ?: settings.defaultEventColor)
@@ -195,7 +185,7 @@ private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenT
                 // Untagged only stores a local color, so it stays editable on read-only calendars.
                 if (tag.id == "" || calendar.isWritable) {
                     IconButton(onClick = { actions.editTag(TagEditTarget(calendar.name, tag)) }) {
-                        Icon(Icons.Outlined.Edit, stringResource(R.string.edit_tag, tag.name), Modifier.size(18.dp))
+                        Icon(AppIcons.Edit, stringResource(R.string.edit_tag, tag.name), Modifier.size(18.dp))
                     }
                 }
             }
