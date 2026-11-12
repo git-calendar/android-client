@@ -248,20 +248,6 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.close)) }
                 },
-                actions = {
-                    FormButton(
-                        stringResource(
-                            when {
-                                !vm.isNew -> R.string.save
-                                vm.isICalFile -> R.string.import_btn
-                                else -> R.string.create
-                            }
-                        ),
-                        { vm.submit(readFile) },
-                        Modifier.padding(end = 12.dp),
-                        enabled = !vm.busy && !(vm.isICalFile && vm.writableCalendars.isEmpty()),
-                    )
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -337,8 +323,19 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                 }
             }
 
-            if (!vm.isNew) {
-                FormButtons {
+            FormButtons {
+                FormButton(
+                    stringResource(
+                        when {
+                            !vm.isNew -> R.string.save
+                            vm.isICalFile -> R.string.import_btn
+                            else -> R.string.create
+                        }
+                    ),
+                    { vm.submit(readFile) },
+                    enabled = !vm.busy && !(vm.isICalFile && vm.writableCalendars.isEmpty()),
+                )
+                if (!vm.isNew) {
                     FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = !vm.busy, danger = true)
                 }
             }
