@@ -11,8 +11,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import dev.jotalac.R
-import dev.jotalac.core.CoreErrorCode
-import dev.jotalac.core.CoreException
 import dev.jotalac.data.Settings
 import dev.jotalac.data.TimeFormat
 import java.time.DayOfWeek
@@ -27,17 +25,8 @@ import java.util.Locale
 
 /** User-facing text for an error, like web-client services/errorHandling.ts formatErrorForUser. */
 fun Throwable.userMessage(context: Context, calendarName: String? = null): String {
-    val core = this as? CoreException
-    val message = when (core?.code) {
-        CoreErrorCode.NETWORK -> context.getString(R.string.core_error_network)
-        CoreErrorCode.AUTH -> context.getString(R.string.core_error_auth)
-        CoreErrorCode.FORBIDDEN -> context.getString(R.string.core_error_forbidden)
-        CoreErrorCode.RATELIMIT -> context.getString(R.string.core_error_rate_limit)
-        CoreErrorCode.VALIDATION -> context.getString(R.string.core_error_validation)
-        CoreErrorCode.STORAGE -> context.getString(R.string.core_error_storage)
-        null -> message ?: toString()
-    }
-    val calendar = core?.calendar ?: calendarName?.trim()?.takeIf { it.isNotEmpty() }
+    val message = message ?: toString()
+    val calendar = calendarName?.trim()?.takeIf { it.isNotEmpty() }
     return if (calendar == null) message else context.getString(R.string.core_error_calendar, calendar, message)
 }
 

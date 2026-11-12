@@ -4,4 +4,4 @@
 # rename or remove them. core.aar ships the same rules; they are repeated here in case the
 # local AAR's consumer rules are skipped.
 -keep class go.** { *; }
--keep class dev.jotalac.core.mobile.** { *; }
+-keep class api.** { *; }

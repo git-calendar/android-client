@@ -18,25 +18,19 @@ A native Android client for [Git Calendar](https://github.com/git-calendar): cal
 
 ## Core
 
-The calendar logic is the shared Go core of Git Calendar, bound to Android with gomobile. The app builds against [jotalac/git-calendar-core](https://github.com/jotalac/git-calendar-core), a fork of [git-calendar/core](https://github.com/git-calendar/core) that adds the `pkg/mobile` binding.
+The calendar logic is the shared Go core of Git Calendar, bound to Android with gomobile. The app binds the `pkg/api` package of [git-calendar/core](https://github.com/git-calendar/core).
 
 ## Build
 
-The core must be checked out next to this repository:
-
-```
-git-calendar/
-├── git-calendar-core/      # https://github.com/jotalac/git-calendar-core
-└── git-calendar-android/   # this repository
-```
-
 ```bash
-git clone https://github.com/jotalac/git-calendar-core.git
-git clone https://github.com/jotalac/git-calendar-android.git
-cd git-calendar-android
+git clone https://github.com/git-calendar/android-client.git
+cd android-client
+make fetch-core
 ./gradlew installDebug
 ```
 
-Requirements: Android Studio (Android SDK with the NDK) and Go 1.27 or newer. Gradle builds the core into `app/libs/core.aar` with `make core` automatically when the core changes. If `go` is not found, set `go.path=/path/to/go` in `local.properties`.
+`make fetch-core` downloads `core.aar` of the core version pinned in the `Makefile` into `app/libs`. `make fetch-core-latest` downloads the latest release instead.
+
+Requirements: Android Studio (Android SDK).
 
 Unit tests: `./gradlew test`. The app needs Android 12 (API 31) or newer.

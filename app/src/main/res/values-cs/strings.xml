@@ -199,12 +199,6 @@
     <string name="files_empty">Zatím žádné soubory.</string>
 
     <string name="core_error_calendar">Kalendář „%1$s“: %2$s</string>
-    <string name="core_error_network">Vzdálená služba není dostupná. Zkontrolujte URL a síťové připojení a zkuste to znovu.</string>
-    <string name="core_error_auth">Ověření se nezdařilo. Zkontrolujte přihlašovací údaje a zkuste to znovu.</string>
-    <string name="core_error_forbidden">Připojení k tomuto vzdálenému hostiteli není povoleno. Zkontrolujte URL a zkuste to znovu.</string>
-    <string name="core_error_rate_limit">Vzdálené službě bylo odesláno příliš mnoho požadavků. Chvíli počkejte a zkuste to znovu.</string>
-    <string name="core_error_validation">Operace obsahuje neplatná data. Zkontrolujte zadané údaje a zkuste to znovu.</string>
-    <string name="core_error_storage">Data kalendáře se nepodařilo načíst nebo uložit. Zkontrolujte dostupné úložiště a zkuste to znovu.</string>
     <string name="core_error_title">Něco se pokazilo</string>
     <string name="sync_failed">Synchronizace selhala</string>
     <string name="startup_failed">Jádro kalendáře se nepodařilo spustit.</string>

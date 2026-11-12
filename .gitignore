@@ -13,9 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
-# gomobile output (built from ../git-calendar-core by `make core`)
+# core release (downloaded by `make fetch-core`)
 /app/libs/core.aar
-/app/libs/core-sources.jar
 .idea/*
 app/build
 app/release
