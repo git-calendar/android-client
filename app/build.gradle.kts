@@ -14,8 +14,14 @@ android {
         applicationId = "dev.jotalac"
         minSdk = 31
         targetSdk = 37
-        versionCode = 10
-        versionName = "1.0"
+
+        // get the version code and name from gradle.properties - only file to bump the verion on new release
+        val appVersionNumber = project.findProject("app.version.number") as? String ?: "1.0.0"
+        val (major, minor, patch) = appVerhionNumber.split(".").map { it.toInt() }
+        require(minor < 100 && patch < 100) { "minor and patch must be smaller then 100" }
+
+        versionCode = major * 10_000 + minor * 100 + patch
+        versionName = appVersionNumber
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
