@@ -49,7 +49,7 @@ android {
     }
 }
 
-// The Go core is bound with gomobile from ../git-calendar-core (pkg/mobile) into app/libs/core.aar (see the root Makefile).
+// The Go core is bound with gomobile from ../git-calendar-core (pkg/api) into app/libs/core.aar (see the root Makefile).
 // `go` is looked up from `go.path` in local.properties, then the usual install locations.
 val localProps = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }

@@ -18,7 +18,7 @@ A native Android client for [Git Calendar](https://github.com/git-calendar): cal
 
 ## Core
 
-The calendar logic is the shared Go core of Git Calendar, bound to Android with gomobile. The app builds against [jotalac/git-calendar-core](https://github.com/jotalac/git-calendar-core), a fork of [git-calendar/core](https://github.com/git-calendar/core) that adds the `pkg/mobile` binding.
+The calendar logic is the shared Go core of Git Calendar, bound to Android with gomobile. The app binds the `pkg/api` package of [git-calendar/core](https://github.com/git-calendar/core).
 
 ## Build
 

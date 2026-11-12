@@ -3,7 +3,6 @@ package dev.jotalac
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.jotalac.core.CoreBridge
-import dev.jotalac.core.CoreErrorCode
 import dev.jotalac.core.CoreException
 import dev.jotalac.core.Event
 import dev.jotalac.core.Reminder
@@ -106,15 +105,13 @@ class CoreBridgeTest {
     }
 
     @Test
-    fun invalidEventReportsValidationCode() = runTest {
+    fun invalidEventReportsError() = runTest {
         core.createCalendar("work", "")
         try {
             core.createEvent(Event(title = "", from = at(monday, 10), to = at(monday, 9), calendar = "work"))
             fail("expected a core error")
         } catch (e: CoreException) {
             assertTrue(e.message!!.isNotEmpty())
-            // Validation errors may or may not carry a code depending on where the core rejects them.
-            assertTrue(e.code == null || e.code == CoreErrorCode.VALIDATION)
         }
     }
 }

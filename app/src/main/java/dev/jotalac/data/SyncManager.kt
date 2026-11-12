@@ -2,12 +2,10 @@ package dev.jotalac.data
 
 import android.util.Log
 import dev.jotalac.core.CoreBridge
-import dev.jotalac.core.CoreErrorCode
 import dev.jotalac.core.CoreException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -67,23 +65,13 @@ class SyncManager(
     suspend fun sync() = requestSync().await()
 
     private suspend fun runOnce() {
-        var rateLimitRetries = 0
-        while (true) {
-            connectivity.awaitOnline()
-            syncing.value = true
-            try {
-                core.syncAll()
-                break
-            } catch (e: CoreException) {
-                if (e.code == CoreErrorCode.RATELIMIT) {
-                    syncing.value = false
-                    delay(if (rateLimitRetries++ == 0) 10_000 else 30_000)
-                    continue
-                }
-                Log.e(TAG, "sync failed [${e.code}] ${e.calendar.orEmpty()}: ${e.message}")
-                _errors.tryEmit(e)
-                break
-            }
+        connectivity.awaitOnline()
+        syncing.value = true
+        try {
+            core.syncAll()
+        } catch (e: CoreException) {
+            Log.e(TAG, "sync failed: ${e.message}")
+            _errors.tryEmit(e)
         }
         try {
             repository.refreshCalendars()

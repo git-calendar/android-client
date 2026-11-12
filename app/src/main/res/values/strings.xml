@@ -216,12 +216,6 @@
 
     <!-- Errors -->
     <string name="core_error_calendar">Calendar “%1$s”: %2$s</string>
-    <string name="core_error_network">Could not reach the remote service. Check the URL and network connection, then try again.</string>
-    <string name="core_error_auth">Authentication failed. Check your credentials and try again.</string>
-    <string name="core_error_forbidden">Connections to this remote host are not allowed. Check the URL and try again.</string>
-    <string name="core_error_rate_limit">Too many requests were sent to the remote service. Wait a moment and try again.</string>
-    <string name="core_error_validation">The operation contains invalid data. Check your input and try again.</string>
-    <string name="core_error_storage">Calendar data could not be read or saved. Check the available storage and try again.</string>
     <string name="core_error_title">Something went wrong</string>
     <string name="sync_failed">Sync failed</string>
     <string name="startup_failed">The calendar core could not start.</string>

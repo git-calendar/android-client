@@ -1,7 +1,5 @@
 package dev.jotalac
 
-import dev.jotalac.core.CoreErrorCode
-import dev.jotalac.core.CoreException
 import dev.jotalac.core.CoreJson
 import dev.jotalac.core.Event
 import dev.jotalac.data.CalendarRepository
@@ -91,15 +89,6 @@ class DataTest {
         assertTrue(json, json.contains("\"tag_id\":\"t\""))
         assertFalse(json, json.contains("\"id\""))
         assertFalse(json, json.contains("parent_id"))
-    }
-
-    @Test
-    fun coreExceptionDecodesShimJson() {
-        val e = CoreException.from(Exception("""{"code":"AUTH","calendar":"work","message":"bad creds"}"""))
-        assertEquals(CoreErrorCode.AUTH, e.code)
-        assertEquals("work", e.calendar)
-        assertEquals("bad creds", e.message)
-        assertNull(CoreException.from(Exception("plain")).code)
     }
 
     @Test

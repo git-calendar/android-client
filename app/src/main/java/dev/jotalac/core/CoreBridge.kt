@@ -1,7 +1,7 @@
 package dev.jotalac.core
 
-import dev.jotalac.core.mobile.Core
-import dev.jotalac.core.mobile.Mobile
+import dev.jotalac.core.api.Api
+import dev.jotalac.core.api.Api_
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
@@ -20,15 +20,15 @@ class CoreBridge(private val dataDir: File) {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = Dispatchers.IO.limitedParallelism(1)
 
-    private var instance: Core? = null
+    private var instance: Api_? = null
 
-    private fun core(): Core = instance ?: Mobile.newCore(dataDir.absolutePath).also {
+    private fun core(): Api_ = instance ?: Api.newApiAt(dataDir.absolutePath).also {
         // date-only iCalendar events (holidays) must run from local midnight to local midnight
         runCatching { it.setTimeZone(ZoneId.systemDefault().id) }
         instance = it
     }
 
-    private suspend fun <T> call(block: Core.() -> T): T = withContext(dispatcher) {
+    private suspend fun <T> call(block: Api_.() -> T): T = withContext(dispatcher) {
         try {
             core().block()
         } catch (e: Exception) {
