@@ -12,7 +12,7 @@ import dev.jotalac.R
 /** DM Sans like the web client, from its variable font, at every weight the app uses. */
 @OptIn(ExperimentalTextApi::class)
 val DmSans = FontFamily(
-    listOf(FontWeight.Normal, FontWeight.Medium, FontWeight.SemiBold, FontWeight.Bold).map {
+    listOf(FontWeight.Normal, FontWeight.Medium, FontWeight.SemiBold, FontWeight.Bold, FontWeight.Black).map {
         Font(R.font.dm_sans, it, variationSettings = FontVariation.Settings(FontVariation.weight(it.weight)))
     }
 )

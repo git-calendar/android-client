@@ -2,7 +2,11 @@ package dev.jotalac.ui.calendar
 
 import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,13 +15,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
@@ -29,6 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,17 +87,19 @@ fun DrawerContent(
         )
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
+        // the calendar list, ported from web-client CalendarList.vue
+        Row(Modifier.fillMaxWidth().padding(start = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                stringResource(R.string.calendars_title),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
+                "${stringResource(R.string.calendars_title)}:",
+                Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
             )
-            IconButton(onClick = actions.createCalendar) {
-                Icon(AppIcons.Plus, stringResource(R.string.create_calendar))
-            }
+            ListAction(AppIcons.Plus, stringResource(R.string.create_calendar), 20.dp, actions.createCalendar)
         }
-        calendars.forEach { CalendarItem(it, settings, hidden, actions) }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            calendars.forEach { CalendarItem(it, settings, hidden, actions) }
+        }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         NavigationDrawerItem(
@@ -124,71 +129,84 @@ fun DrawerContent(
 
 @Composable
 private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenTags, actions: DrawerActions) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
-            Icon(
-                when {
-                    calendar.isICal -> AppIcons.Link
-                    // no remote: stored only on this device
-                    calendar.remoteUrl.isEmpty() -> AppIcons.Smartphone
-                    else -> AppIcons.GitBranch
-                },
-                null,
-                Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                calendar.name,
-                Modifier.weight(1f).padding(start = 8.dp),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (calendar.encrypted) {
-                Icon(AppIcons.Lock, stringResource(R.string.calendar_is_encrypted), Modifier.size(16.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            Modifier.fillMaxWidth().height(32.dp).padding(start = 6.dp, end = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    calendar.name,
+                    Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val type = stringResource(if (calendar.isICal) R.string.calendar_ical else R.string.calendar_git_repository)
+                Icon(
+                    if (calendar.isICal) AppIcons.Link else AppIcons.GitBranch,
+                    type,
+                    Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             if (calendar.isWritable) {
-                IconButton(onClick = { actions.editTag(TagEditTarget(calendar.name, null)) }) {
-                    Icon(AppIcons.Plus, stringResource(R.string.create_tag, calendar.name), Modifier.size(20.dp))
+                ListAction(AppIcons.Plus, stringResource(R.string.create_tag, calendar.name), 18.dp) {
+                    actions.editTag(TagEditTarget(calendar.name, null))
                 }
             }
-            IconButton(onClick = { actions.editCalendar(calendar) }) {
-                Icon(AppIcons.Edit, stringResource(R.string.edit_calendar, calendar.name), Modifier.size(20.dp))
+            ListAction(AppIcons.Edit, stringResource(R.string.edit_calendar, calendar.name), 16.dp) {
+                actions.editCalendar(calendar)
             }
         }
         val untagged = Tag(id = "", name = stringResource(R.string.tag_untagged), color = settings.untaggedColors[calendar.name] ?: settings.defaultEventColor)
         (listOf(untagged) + calendar.tagList).forEach { tag ->
-            val key = "${calendar.name}:${tag.id.orEmpty()}"
-            val visible = key !in hidden
-            val color = TagColor.of(tag.color).color
+            val visible = "${calendar.name}:${tag.id.orEmpty()}" !in hidden
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
+                Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .clickable { actions.toggleTag(calendar.name, tag.id, visible) }
-                    .padding(start = 16.dp),
+                    .height(28.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .toggleable(visible, role = Role.Checkbox) { actions.toggleTag(calendar.name, tag.id, !it) }
+                    .padding(start = 6.dp, end = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Checkbox(
-                    checked = visible,
-                    onCheckedChange = { actions.toggleTag(calendar.name, tag.id, !it) },
-                    colors = CheckboxDefaults.colors(checkedColor = color, uncheckedColor = color),
+                // a square like the web checkbox, filled with the tag color while the tag is shown
+                Box(
+                    Modifier
+                        .size(16.dp)
+                        .clip(MaterialTheme.shapes.small)
+                        .background(if (visible) TagColor.of(tag.color).color else MaterialTheme.colorScheme.surfaceContainerHighest),
                 )
                 Text(
                     tag.name,
                     Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 // Untagged only stores a local color, so it stays editable on read-only calendars.
                 if (tag.id == "" || calendar.isWritable) {
-                    IconButton(onClick = { actions.editTag(TagEditTarget(calendar.name, tag)) }) {
-                        Icon(AppIcons.Edit, stringResource(R.string.edit_tag, tag.name), Modifier.size(18.dp))
+                    ListAction(AppIcons.Edit, stringResource(R.string.edit_tag, tag.name), 14.dp) {
+                        actions.editTag(TagEditTarget(calendar.name, tag))
                     }
                 }
             }
         }
+    }
+}
+
+/** A transparent icon button of the calendar list, small like the web client's. */
+@Composable
+private fun ListAction(icon: ImageVector, description: String, iconSize: Dp, onClick: () -> Unit) {
+    Box(
+        Modifier.size(28.dp).clip(MaterialTheme.shapes.small).clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, description, Modifier.size(iconSize))
     }
 }
