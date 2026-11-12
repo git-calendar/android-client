@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -73,8 +75,15 @@ fun DrawerContent(
     var pickingDate by remember { mutableStateOf(false) }
     Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(8.dp)) {
-            Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.size(40.dp))
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
+            // the launcher foreground's logo takes only its middle 36%, the rest is padding for the icon mask
+            Box(Modifier.size(24.dp)) {
+                Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(24.dp / 0.36f))
+            }
+            Text(
+                stringResource(R.string.app_name),
+                Modifier.padding(start = 12.dp),
+                style = MaterialTheme.typography.titleLarge,
+            )
         }
         NavigationDrawerItem(
             shape = MaterialTheme.shapes.small,
