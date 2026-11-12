@@ -6,11 +6,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,49 +19,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.Place
-import androidx.compose.material.icons.outlined.Repeat
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.VideoCall
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -88,8 +71,22 @@ import dev.jotalac.data.Frequency
 import dev.jotalac.data.RepeatEnd
 import dev.jotalac.data.Settings
 import dev.jotalac.ui.common.ConfirmDialog
+import dev.jotalac.ui.common.FieldAction
+import dev.jotalac.ui.common.FormButton
+import dev.jotalac.ui.common.FormButtons
+import dev.jotalac.ui.common.FormCheckbox
+import dev.jotalac.ui.common.FormChip
+import dev.jotalac.ui.common.FormDialog
+import dev.jotalac.ui.common.FormGap
+import dev.jotalac.ui.common.FormHint
+import dev.jotalac.ui.common.FormIconButton
+import dev.jotalac.ui.common.FormSelect
+import dev.jotalac.ui.common.FormTextField
+import dev.jotalac.ui.common.FormToggle
+import dev.jotalac.ui.common.FormValue
 import dev.jotalac.ui.common.MessageDialog
 import dev.jotalac.ui.common.currentLocale
+import dev.jotalac.ui.common.formTextStyle
 import dev.jotalac.ui.common.rememberTimeFormatter
 import dev.jotalac.ui.common.shortName
 import dev.jotalac.ui.common.use24Hour
@@ -103,6 +100,12 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
+/** Width of the "From:" and "To:" labels, so the date and time fields line up. */
+private val DateLabelWidth = 44.dp
+
+/** Indent of the repeat end row under the repeat select, like the web client on a phone. */
+private val SubRowIndent = 24.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () -> Unit) {
@@ -110,7 +113,7 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
     val done by vm.done.collectAsStateWithLifecycle()
     LaunchedEffect(done) { if (done) onClose() }
     var confirmDelete by remember { mutableStateOf(false) }
-    var customSheet by remember { mutableStateOf(false) }
+    var customDialog by remember { mutableStateOf(false) }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     val enabled = !vm.readonly && !vm.saving
 
@@ -132,19 +135,14 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
                     IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.close)) }
                 },
                 actions = {
-                    if (!vm.isNew && !vm.readonly) {
-                        IconButton(onClick = { confirmDelete = true }, enabled = enabled) {
-                            Icon(Icons.Outlined.Delete, stringResource(R.string.delete))
-                        }
-                    }
                     if (!vm.readonly) {
-                        Button(shape = MaterialTheme.shapes.small, onClick = vm::save, enabled = enabled, modifier = Modifier.padding(end = 8.dp)) {
-                            Text(stringResource(R.string.save))
-                        }
+                        FormButton(stringResource(R.string.save), vm::save, Modifier.padding(end = 12.dp), enabled = enabled)
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             Modifier
@@ -152,77 +150,78 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
                 .fillMaxSize()
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = FormGap, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(FormGap),
         ) {
-            if (vm.readonly) {
-                Text(stringResource(R.string.event_readonly), color = MaterialTheme.colorScheme.error)
-            }
-            OutlinedTextField(
+            if (vm.readonly) FormHint(stringResource(R.string.event_readonly))
+            FormTextField(
                 value = vm.title,
                 onValueChange = { vm.title = it; vm.error = null },
-                label = { Text(stringResource(R.string.event_title)) },
-                singleLine = true,
+                placeholder = stringResource(R.string.event_title),
                 enabled = enabled,
                 isError = vm.error == R.string.error_missing_title,
-                textStyle = MaterialTheme.typography.titleLarge,
+                textStyle = formTextStyle().copy(fontSize = MaterialTheme.typography.titleMedium.fontSize),
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Schedule, null)
-                Text(stringResource(R.string.event_entire_day), Modifier.weight(1f).padding(start = 12.dp))
-                Switch(checked = vm.allDay, onCheckedChange = { vm.allDay = it }, enabled = enabled)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DateTimeRow(stringResource(R.string.event_from), vm.fromDate, vm.fromTime, vm.allDay, enabled, settings,
+                    onDate = { d ->
+                        // Keep the duration when the start date moves, like most calendar apps.
+                        val shift = java.time.temporal.ChronoUnit.DAYS.between(vm.fromDate, d)
+                        vm.fromDate = d
+                        vm.toDate = vm.toDate.plusDays(shift)
+                    },
+                    onTime = { vm.fromTime = it })
+                DateTimeRow(stringResource(R.string.event_to), vm.toDate, vm.toTime, vm.allDay, enabled, settings,
+                    onDate = { vm.toDate = it }, onTime = { vm.toTime = it },
+                    isError = vm.error == R.string.error_bad_to_date)
             }
-            DateTimeRow(stringResource(R.string.event_from), vm.fromDate, vm.fromTime, vm.allDay, enabled, settings,
-                onDate = { d ->
-                    // Keep the duration when the start date moves, like most calendar apps.
-                    val shift = java.time.temporal.ChronoUnit.DAYS.between(vm.fromDate, d)
-                    vm.fromDate = d
-                    vm.toDate = vm.toDate.plusDays(shift)
-                },
-                onTime = { vm.fromTime = it })
-            DateTimeRow(stringResource(R.string.event_to), vm.toDate, vm.toTime, vm.allDay, enabled, settings,
-                onDate = { vm.toDate = it }, onTime = { vm.toTime = it },
-                isError = vm.error == R.string.error_bad_to_date)
+            FormCheckbox(stringResource(R.string.event_entire_day), vm.allDay, { vm.allDay = it }, enabled = enabled)
 
-            HorizontalDivider()
-            RepeatFields(vm, enabled) { customSheet = true }
-
-            HorizontalDivider()
+            RepeatFields(vm, enabled) { customDialog = true }
             ReminderFields(vm, enabled) {
                 if (vm.addReminder()) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
-
-            HorizontalDivider()
             CalendarAndTag(vm, enabled)
             LocationField(vm, enabled)
-            OutlinedTextField(
+            FormTextField(
                 value = vm.description,
                 onValueChange = { vm.description = it },
-                label = { Text(stringResource(R.string.event_description)) },
+                placeholder = stringResource(R.string.event_description),
+                singleLine = false,
                 minLines = 3,
                 enabled = enabled,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.size(32.dp))
+
+            if (!vm.isNew && !vm.readonly) {
+                FormButtons {
+                    FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = enabled, danger = true)
+                }
+            }
+            Spacer(Modifier.size(16.dp))
         }
     }
 
     vm.error?.let { MessageDialog(stringResource(it), { vm.error = null }) }
     vm.failure?.let { MessageDialog(it.userMessage(context, vm.calendar), { vm.failure = null }) }
     if (confirmDelete) {
-        ConfirmDialog(stringResource(R.string.event_delete_confirm), stringResource(R.string.delete), vm::delete) {
+        ConfirmDialog(stringResource(R.string.event_delete_confirm), stringResource(R.string.delete), vm::delete, danger = true) {
             confirmDelete = false
         }
     }
     vm.strategyPrompt?.let {
         StrategyDialog(onPick = vm::applyStrategy, onDismiss = { vm.strategyPrompt = null })
     }
-    if (customSheet) CustomRepeatSheet(vm) { customSheet = false }
+    if (customDialog) CustomRepeatDialog(vm) { customDialog = false }
 }
 
 // ---------------------------------------- date & time ------------------------------------------
+
+@Composable
+private fun mediumDate(date: LocalDate): String =
+    date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(currentLocale()))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -241,20 +240,17 @@ private fun DateTimeRow(
     val times = rememberTimeFormatter(settings)
     var pickDate by remember { mutableStateOf(false) }
     var pickTime by remember { mutableStateOf(false) }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            label,
-            Modifier.width(56.dp),
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("$label:", Modifier.width(DateLabelWidth), style = formTextStyle())
+        FormValue(
+            "${mediumDate(date)} (${date.dayOfWeek.shortName(locale)})",
+            { pickDate = true },
+            Modifier.weight(1f),
+            enabled = enabled,
+            isError = isError,
         )
-        TextButton(onClick = { pickDate = true }, enabled = enabled, modifier = Modifier.weight(1f)) {
-            Text(
-                date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)) +
-                    " (" + date.dayOfWeek.shortName(locale) + ")",
-            )
-        }
         if (!allDay) {
-            TextButton(onClick = { pickTime = true }, enabled = enabled) { Text(times.time(time)) }
+            FormValue(times.time(time), { pickTime = true }, Modifier.width(96.dp), enabled = enabled, isError = isError)
         }
     }
 
@@ -295,50 +291,47 @@ fun DatePickerFor(date: LocalDate, onDismiss: () -> Unit, onPick: (LocalDate) ->
 
 // ------------------------------------------- repeat --------------------------------------------
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RepeatFields(vm: EventEditorViewModel, enabled: Boolean, openCustom: () -> Unit) {
     var pickEnd by remember { mutableStateOf(false) }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Outlined.Repeat, null)
-        Spacer(Modifier.width(12.dp))
-        Dropdown(
-            label = stringResource(R.string.repeat),
-            selected = stringResource(vm.repeatMode.label),
-            options = RepeatMode.entries.map { stringResource(it.label) to it },
-            enabled = enabled,
-            modifier = Modifier.weight(1f),
-        ) { mode ->
-            vm.selectRepeat(mode)
-            if (mode == RepeatMode.Custom) openCustom()
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("${stringResource(R.string.repeat)}:", style = formTextStyle())
+            FormSelect(
+                selected = stringResource(vm.repeatMode.label),
+                options = RepeatMode.entries.map { stringResource(it.label) to it },
+                onSelect = { mode ->
+                    vm.selectRepeat(mode)
+                    if (mode == RepeatMode.Custom) openCustom()
+                },
+                modifier = Modifier.weight(1f),
+                enabled = enabled,
+            )
+            if (vm.repeatMode == RepeatMode.Custom) {
+                FormButton(stringResource(R.string.repeat_edit), openCustom, enabled = enabled)
+            }
         }
         if (vm.repeatMode == RepeatMode.Custom) {
-            TextButton(onClick = openCustom, enabled = enabled) { Text(stringResource(R.string.repeat_edit)) }
-        }
-    }
-    if (vm.repeatMode == RepeatMode.Custom) {
-        Text(
-            customSummary(vm),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 36.dp),
-        )
-    } else if (vm.repeatMode != RepeatMode.Never) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 36.dp)) {
-            Dropdown(
-                label = stringResource(R.string.repeat_end),
-                selected = stringResource(vm.endMode.label),
-                options = EndMode.entries.map { stringResource(it.label) to it },
-                enabled = enabled,
-                modifier = Modifier.weight(1f),
-            ) { vm.repeatTouched = true; vm.endMode = it }
-            Spacer(Modifier.width(8.dp))
-            when (vm.endMode) {
-                EndMode.Never -> Spacer(Modifier.weight(1f))
-                EndMode.On -> TextButton(onClick = { pickEnd = true }, enabled = enabled, modifier = Modifier.weight(1f)) {
-                    Text(vm.endDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(currentLocale())))
+            FormHint(customSummary(vm), Modifier.padding(start = SubRowIndent))
+        } else if (vm.repeatMode != RepeatMode.Never) {
+            Row(
+                Modifier.padding(start = SubRowIndent),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("${stringResource(R.string.repeat_end)}:", style = formTextStyle())
+                FormSelect(
+                    selected = stringResource(vm.endMode.label),
+                    options = EndMode.entries.map { stringResource(it.label) to it },
+                    onSelect = { vm.repeatTouched = true; vm.endMode = it },
+                    modifier = Modifier.weight(1f),
+                    enabled = enabled,
+                )
+                when (vm.endMode) {
+                    EndMode.Never -> {}
+                    EndMode.On -> FormValue(mediumDate(vm.endDate), { pickEnd = true }, Modifier.weight(1f), enabled = enabled)
+                    EndMode.After -> CountField(vm.count, enabled) { vm.repeatTouched = true; vm.count = it }
                 }
-                EndMode.After -> CountField(vm.count, enabled, Modifier.weight(1f)) { vm.repeatTouched = true; vm.count = it }
             }
         }
     }
@@ -371,26 +364,28 @@ private val Frequency.unitLabel: Int
     }
 
 @Composable
-private fun CountField(value: Int, enabled: Boolean, modifier: Modifier, onChange: (Int) -> Unit) {
+private fun CountField(value: Int, enabled: Boolean, onChange: (Int) -> Unit) {
     var text by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = { t ->
-            text = t.filter(Char::isDigit).take(4)
-            onChange(text.toIntOrNull() ?: 0)
-        },
-        enabled = enabled,
-        singleLine = true,
-        suffix = { Text(stringResource(R.string.repeat_times)) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier,
-    )
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FormTextField(
+            value = text,
+            onValueChange = { t ->
+                text = t.filter(Char::isDigit).take(4)
+                onChange(text.toIntOrNull() ?: 0)
+            },
+            placeholder = "",
+            enabled = enabled,
+            isError = value < 1,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.width(56.dp),
+        )
+        Text(stringResource(R.string.repeat_times), style = formTextStyle())
+    }
 }
 
 /** Custom recurrence editor, ported from web-client RepeatModal.vue. */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun CustomRepeatSheet(vm: EventEditorViewModel, onDismiss: () -> Unit) {
+private fun CustomRepeatDialog(vm: EventEditorViewModel, onDismiss: () -> Unit) {
     val locale = currentLocale()
     var rule by remember { mutableStateOf(vm.custom) }
     var endMode by remember {
@@ -405,87 +400,75 @@ private fun CustomRepeatSheet(vm: EventEditorViewModel, onDismiss: () -> Unit) {
     var count by remember { mutableStateOf((rule.end as? RepeatEnd.After)?.count ?: 5) }
     var until by remember { mutableStateOf((rule.end as? RepeatEnd.On)?.date ?: vm.fromDate.plusWeeks(1)) }
     var pickUntil by remember { mutableStateOf(false) }
-    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val canSave = rule.interval >= 1 && (rule.frequency != Frequency.WEEKLY || rule.weekdays.isNotEmpty()) &&
         (endMode != EndMode.After || count >= 1)
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
-        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(stringResource(R.string.repeat_custom), style = MaterialTheme.typography.titleLarge)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.repeat_every))
-                var text by remember { mutableStateOf(rule.interval.toString()) }
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { t ->
-                        text = t.filter(Char::isDigit).take(3)
-                        rule = rule.copy(interval = text.toIntOrNull() ?: 0)
-                    },
-                    singleLine = true,
-                    isError = rule.interval < 1,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.width(80.dp),
-                )
-                Dropdown(
-                    label = null,
-                    selected = stringResource(rule.frequency.unitLabel),
-                    options = Frequency.entries.map { stringResource(it.unitLabel) to it },
-                    enabled = true,
-                    modifier = Modifier.weight(1f),
-                ) { f ->
+    FormDialog(onDismiss, stringResource(R.string.repeat_custom)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.repeat_every), style = formTextStyle())
+            var text by remember { mutableStateOf(rule.interval.toString()) }
+            FormTextField(
+                value = text,
+                onValueChange = { t ->
+                    text = t.filter(Char::isDigit).take(3)
+                    rule = rule.copy(interval = text.toIntOrNull() ?: 0)
+                },
+                placeholder = "",
+                isError = rule.interval < 1,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.width(56.dp),
+            )
+            FormSelect(
+                selected = stringResource(rule.frequency.unitLabel),
+                options = Frequency.entries.map { stringResource(it.unitLabel) to it },
+                onSelect = { f ->
                     rule = rule.copy(
                         frequency = f,
                         weekdays = if (f == Frequency.WEEKLY && rule.weekdays.isEmpty()) setOf(vm.fromDate.dayOfWeek) else rule.weekdays,
                     )
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (rule.frequency == Frequency.WEEKLY) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                weekDays(java.time.DayOfWeek.MONDAY).forEach { day ->
+                    val on = day in rule.weekdays
+                    FormChip(
+                        day.shortName(locale),
+                        on,
+                        { rule = rule.copy(weekdays = if (on) rule.weekdays - day else rule.weekdays + day) },
+                        Modifier.weight(1f),
+                    )
                 }
             }
-            if (rule.frequency == Frequency.WEEKLY) {
-                Text(stringResource(R.string.repeat_on), style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    weekDays(java.time.DayOfWeek.MONDAY).forEach { day ->
-                        val on = day in rule.weekdays
-                        FilterChip(
-                            selected = on,
-                            onClick = { rule = rule.copy(weekdays = if (on) rule.weekdays - day else rule.weekdays + day) },
-                            label = { Text(day.shortName(locale)) },
-                        )
-                    }
-                }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("${stringResource(R.string.repeat_ends)}:", style = formTextStyle())
+            FormToggle(EndMode.entries.map { stringResource(it.label) to it }, endMode, { endMode = it }, Modifier.fillMaxWidth())
+            when (endMode) {
+                EndMode.Never -> {}
+                EndMode.After -> CountField(count, true) { count = it }
+                EndMode.On -> FormValue(mediumDate(until), { pickUntil = true }, Modifier.fillMaxWidth())
             }
-            Text(stringResource(R.string.repeat_ends), style = MaterialTheme.typography.labelLarge)
-            Column {
-                EndMode.entries.forEach { mode ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = endMode == mode, onClick = { endMode = mode })
-                        Text(stringResource(mode.label), Modifier.width(72.dp))
-                        when (mode) {
-                            EndMode.Never -> {}
-                            EndMode.After -> CountField(count, endMode == mode, Modifier.width(160.dp)) { count = it }
-                            EndMode.On -> TextButton(onClick = { pickUntil = true }, enabled = endMode == mode) {
-                                Text(until.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)))
-                            }
-                        }
-                    }
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(shape = MaterialTheme.shapes.small, onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-                Button(
-                    shape = MaterialTheme.shapes.small,
-                    enabled = canSave,
-                    onClick = {
-                        vm.repeatTouched = true
-                        vm.custom = rule.copy(
-                            end = when (endMode) {
-                                EndMode.Never -> RepeatEnd.Never
-                                EndMode.After -> RepeatEnd.After(count)
-                                EndMode.On -> RepeatEnd.On(until)
-                            },
-                        )
-                        onDismiss()
-                    },
-                ) { Text(stringResource(R.string.save)) }
-            }
+        }
+        FormButtons {
+            FormButton(
+                stringResource(R.string.save),
+                {
+                    vm.repeatTouched = true
+                    vm.custom = rule.copy(
+                        end = when (endMode) {
+                            EndMode.Never -> RepeatEnd.Never
+                            EndMode.After -> RepeatEnd.After(count)
+                            EndMode.On -> RepeatEnd.On(until)
+                        },
+                    )
+                    onDismiss()
+                },
+                enabled = canSave,
+            )
+            FormButton(stringResource(R.string.cancel), onDismiss)
         }
     }
     if (pickUntil) DatePickerFor(until, { pickUntil = false }) { until = it }
@@ -503,28 +486,27 @@ fun reminderLabel(minutes: Long): String = when {
 
 @Composable
 private fun ReminderFields(vm: EventEditorViewModel, enabled: Boolean, onAdd: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Outlined.NotificationsNone, null)
-        Text(stringResource(R.string.reminders), Modifier.weight(1f).padding(start = 12.dp))
-        if (enabled && vm.reminders.size < REMINDER_PRESETS.size) {
-            TextButton(onClick = onAdd) { Text(stringResource(R.string.reminder_add)) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.reminders), style = formTextStyle())
+            if (enabled && vm.reminders.size < REMINDER_PRESETS.size) {
+                FormIconButton(Icons.Outlined.Add, stringResource(R.string.reminder_add), onAdd)
+            }
         }
-    }
-    vm.reminders.toList().forEachIndexed { index, minutes ->
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 36.dp)) {
-            // Presets used by other rows are not offered again; a non-preset value from imported data stays visible.
-            val options = (REMINDER_PRESETS.sorted() + minutes).distinct().sorted()
-                .filter { it == minutes || it !in vm.reminders }
-            Dropdown(
-                label = null,
-                selected = reminderLabel(minutes),
-                options = options.map { reminderLabel(it) to it },
-                enabled = enabled,
-                modifier = Modifier.weight(1f),
-            ) { vm.reminders[index] = it }
-            if (enabled) {
-                IconButton(onClick = { vm.reminders.removeAt(index) }) {
-                    Icon(Icons.Outlined.Close, stringResource(R.string.reminder_remove))
+        vm.reminders.toList().forEachIndexed { index, minutes ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Presets used by other rows are not offered again; a non-preset value from imported data stays visible.
+                val options = (REMINDER_PRESETS.sorted() + minutes).distinct().sorted()
+                    .filter { it == minutes || it !in vm.reminders }
+                FormSelect(
+                    selected = reminderLabel(minutes),
+                    options = options.map { reminderLabel(it) to it },
+                    onSelect = { vm.reminders[index] = it },
+                    modifier = Modifier.weight(1f),
+                    enabled = enabled,
+                )
+                if (enabled) {
+                    FormButton(stringResource(R.string.reminder_remove), { vm.reminders.removeAt(index) })
                 }
             }
         }
@@ -536,67 +518,26 @@ private fun ReminderFields(vm: EventEditorViewModel, enabled: Boolean, onAdd: ()
 @Composable
 private fun CalendarAndTag(vm: EventEditorViewModel, enabled: Boolean) {
     val calendars = vm.calendars
-    Dropdown(
-        label = stringResource(R.string.event_calendar),
-        selected = vm.calendar,
-        options = calendars.map { it.name to it.name },
-        enabled = enabled,
-        disabled = calendars.filter { !it.isWritable }.map { it.name }.toSet(),
-        modifier = Modifier.fillMaxWidth(),
-    ) { vm.selectCalendar(it) }
     val tags = vm.tagsOf(vm.calendar)
     val untagged = stringResource(R.string.tag_untagged)
     val selectedTag = tags.firstOrNull { it.id == vm.tagId }
-    Dropdown(
-        label = stringResource(R.string.event_tag),
-        selected = selectedTag?.name ?: untagged,
-        options = listOf(untagged to "") + tags.map { it.name to it.id.orEmpty() },
-        enabled = enabled,
-        leading = selectedTag?.let { TagColor.of(it.color).color },
-        modifier = Modifier.fillMaxWidth(),
-    ) { vm.tagId = it.ifEmpty { null } }
-}
-
-/** A read-only text field that opens a menu, the Material equivalent of a <select>. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun <T> Dropdown(
-    label: String?,
-    selected: String,
-    options: List<Pair<String, T>>,
-    enabled: Boolean,
-    modifier: Modifier = Modifier,
-    disabled: Set<T> = emptySet(),
-    leading: androidx.compose.ui.graphics.Color? = null,
-    onSelect: (T) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (enabled) expanded = it }, modifier = modifier) {
-        OutlinedTextField(
-            value = selected,
-            onValueChange = {},
-            readOnly = true,
+    Row(horizontalArrangement = Arrangement.spacedBy(FormGap)) {
+        FormSelect(
+            selected = vm.calendar,
+            options = calendars.map { it.name to it.name },
+            onSelect = { vm.selectCalendar(it) },
+            modifier = Modifier.weight(1f),
             enabled = enabled,
-            singleLine = true,
-            label = label?.let { { Text(it) } },
-            leadingIcon = leading?.let { color ->
-                { Box(Modifier.size(16.dp).clip(MaterialTheme.shapes.extraSmall).background(color)) }
-            },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled).fillMaxWidth(),
+            disabled = calendars.filter { !it.isWritable }.map { it.name }.toSet(),
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { (text, value) ->
-                DropdownMenuItem(
-                    text = { Text(text) },
-                    enabled = value !in disabled,
-                    onClick = {
-                        expanded = false
-                        onSelect(value)
-                    },
-                )
-            }
-        }
+        FormSelect(
+            selected = selectedTag?.name ?: untagged,
+            options = listOf(untagged to "") + tags.map { it.name to it.id.orEmpty() },
+            onSelect = { vm.tagId = it.ifEmpty { null } },
+            modifier = Modifier.weight(1f),
+            enabled = enabled,
+            leading = selectedTag?.let { TagColor.of(it.color).color },
+        )
     }
 }
 
@@ -605,34 +546,33 @@ fun <T> Dropdown(
 /** Which occurrences of a repeating event to change, ported from web-client StrategyModal.vue. */
 @Composable
 fun StrategyDialog(onPick: (UpdateStrategy) -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.strategy_title)) },
-        text = {
-            Column {
-                listOf(
-                    Triple(UpdateStrategy.All, R.string.strategy_all, R.string.strategy_all_body),
-                    Triple(UpdateStrategy.Following, R.string.strategy_following, R.string.strategy_following_body),
-                    Triple(UpdateStrategy.Current, R.string.strategy_current, R.string.strategy_current_body),
-                ).forEach { (strategy, title, body) ->
-                    Surface(
-                        onClick = { onPick(strategy) },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    ) {
-                        ListItem(
-                            headlineContent = { Text(stringResource(title)) },
-                            supportingContent = { Text(stringResource(body)) },
-                            leadingContent = { StrategyIcon(strategy) },
-                        )
+    FormDialog(onDismiss, stringResource(R.string.strategy_title)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(
+                Triple(UpdateStrategy.All, R.string.strategy_all, R.string.strategy_all_body),
+                Triple(UpdateStrategy.Following, R.string.strategy_following, R.string.strategy_following_body),
+                Triple(UpdateStrategy.Current, R.string.strategy_current, R.string.strategy_current_body),
+            ).forEach { (strategy, title, body) ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .clickable { onPick(strategy) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    StrategyIcon(strategy)
+                    Column {
+                        Text(stringResource(title), style = formTextStyle())
+                        FormHint(stringResource(body))
                     }
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
+        }
+        FormButtons { FormButton(stringResource(R.string.cancel), onDismiss) }
+    }
 }
 
 /** Five occurrence blocks with the affected ones filled, like web-client StrategySVG.vue. */
@@ -677,26 +617,23 @@ private fun LocationField(vm: EventEditorViewModel, enabled: Boolean) {
     val isLink = EventLocation.meetingUrl(vm.location) != null
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = {}) {
-        OutlinedTextField(
+        FormTextField(
             value = vm.location,
             onValueChange = vm::editLocation,
-            label = { Text(stringResource(R.string.event_location)) },
-            singleLine = true,
+            placeholder = stringResource(R.string.event_location),
             enabled = enabled,
-            trailingIcon = if (vm.location.isBlank()) null else {
+            trailing = if (vm.location.isBlank()) null else {
                 {
-                    IconButton(onClick = {
-                        val intent = EventLocation.intent(vm.location) ?: return@IconButton
+                    FieldAction(
+                        if (isLink) Icons.Outlined.VideoCall else Icons.Outlined.Map,
+                        stringResource(if (isLink) R.string.location_join else R.string.location_open_map),
+                    ) {
+                        val intent = EventLocation.intent(vm.location) ?: return@FieldAction
                         try {
                             context.startActivity(intent)
                         } catch (_: ActivityNotFoundException) {
                             Toast.makeText(context, R.string.location_no_app, Toast.LENGTH_SHORT).show()
                         }
-                    }) {
-                        Icon(
-                            if (isLink) Icons.Outlined.VideoCall else Icons.Outlined.Map,
-                            stringResource(if (isLink) R.string.location_join else R.string.location_open_map),
-                        )
                     }
                 }
             },
@@ -705,7 +642,12 @@ private fun LocationField(vm: EventEditorViewModel, enabled: Boolean) {
                 .fillMaxWidth()
                 .onFocusChanged { focused = it.isFocused },
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { closedAt = vm.location }) {
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { closedAt = vm.location },
+            shape = MaterialTheme.shapes.small,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
             past.forEach { suggestion ->
                 LocationSuggestion(suggestion, Icons.Outlined.History) {
                     vm.pickLocation(suggestion)
@@ -725,9 +667,8 @@ private fun LocationField(vm: EventEditorViewModel, enabled: Boolean) {
 @Composable
 private fun LocationSuggestion(text: String, icon: ImageVector, onPick: () -> Unit) {
     DropdownMenuItem(
-        text = { Text(text, maxLines = 2) },
-        leadingIcon = { Icon(icon, null) },
+        text = { Text(text, style = formTextStyle(), maxLines = 2) },
+        leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
         onClick = onPick,
     )
 }
-
