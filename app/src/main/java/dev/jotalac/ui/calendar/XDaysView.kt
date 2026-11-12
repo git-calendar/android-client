@@ -777,15 +777,23 @@ private fun GridColumns(
 
             // Current time line across the grid, with a dot in today's column; the time is in the hour column.
             minutesIntoGrid(nowTime, range)?.let { nowMinutes ->
-                val y = gridHeight * (nowMinutes.toFloat() / (range.hours * 60))
-                Box(Modifier.offset(y = y - 1.dp).fillMaxWidth().height(2.dp).background(primary.copy(alpha = 0.35f)))
-                if (todayIndex >= 0) {
-                    Box(
-                        Modifier.offset(x = colWidth * todayIndex, y = y - 1.dp).width(colWidth).height(2.dp)
-                            .background(primary),
-                    )
+                val background = MaterialTheme.colorScheme.background
+                Canvas(Modifier.fillMaxSize()) {
+                    val y = size.height * (nowMinutes.toFloat() / (range.hours * 60))
+                    drawLine(primary.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+                    if (todayIndex < 0) return@Canvas
+                    val left = todayIndex * colPx
+                    val line = 2.dp.toPx()
                     // centered on today's left edge; in the first column the pager clips its left half
-                    Box(Modifier.offset(x = colWidth * todayIndex - 5.dp, y = y - 5.dp).size(10.dp).background(primary))
+                    val square = 10.dp.toPx()
+                    val outline = 1f
+                    // a background-colored outline under both, so the line and square stand out as one shape
+                    drawRect(background, Offset(left - outline, y - line / 2 - outline),
+                        androidx.compose.ui.geometry.Size(colPx + outline * 2, line + outline * 2))
+                    drawRect(background, Offset(left - square / 2 - outline, y - square / 2 - outline),
+                        androidx.compose.ui.geometry.Size(square + outline * 2, square + outline * 2))
+                    drawRect(primary, Offset(left, y - line / 2), androidx.compose.ui.geometry.Size(colPx, line))
+                    drawRect(primary, Offset(left - square / 2, y - square / 2), androidx.compose.ui.geometry.Size(square, square))
                 }
             }
 
