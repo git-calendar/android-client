@@ -2,9 +2,7 @@ package dev.jotalac.ui.common
 
 import android.content.Context
 import android.text.format.DateFormat
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
@@ -32,12 +30,10 @@ fun Throwable.userMessage(context: Context, calendarName: String? = null): Strin
 
 @Composable
 fun MessageDialog(message: String, onDismiss: () -> Unit, title: String? = null) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = title?.let { { Text(it) } },
-        text = { Text(message) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
-    )
+    FormDialog(onDismiss, title) {
+        Text(message, style = formTextStyle())
+        FormButtons { FormButton(stringResource(R.string.ok), onDismiss) }
+    }
 }
 
 @Composable
@@ -45,16 +41,16 @@ fun ConfirmDialog(
     message: String,
     confirmLabel: String,
     onConfirm: () -> Unit,
+    danger: Boolean = false,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = { onDismiss(); onConfirm() }) { Text(confirmLabel) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
+    FormDialog(onDismiss) {
+        Text(message, style = formTextStyle())
+        FormButtons {
+            FormButton(confirmLabel, { onDismiss(); onConfirm() }, danger = danger)
+            FormButton(stringResource(R.string.cancel), onDismiss)
+        }
+    }
 }
 
 // ------------------------------------------ formatting -----------------------------------------
