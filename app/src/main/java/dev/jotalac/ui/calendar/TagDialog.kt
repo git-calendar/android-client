@@ -1,5 +1,6 @@
 package dev.jotalac.ui.calendar
 
+import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,8 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -110,7 +109,7 @@ fun ColorPicker(selected: String, onSelect: (String) -> Unit) {
                     .semantics { contentDescription = label },
                 contentAlignment = Alignment.Center,
             ) {
-                if (option.id == selected) Icon(Icons.Filled.Check, null, Modifier.size(18.dp), tint = contentColorOn(option.color))
+                if (option.id == selected) Icon(AppIcons.Check, null, Modifier.size(18.dp), tint = contentColorOn(option.color))
             }
         }
         Spacer(Modifier.width(1.dp))

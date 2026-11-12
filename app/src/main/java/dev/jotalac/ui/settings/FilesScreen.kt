@@ -1,5 +1,6 @@
 package dev.jotalac.ui.settings
 
+import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
@@ -14,12 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -72,11 +67,11 @@ fun FilesScreen(root: File, onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.files_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        Icon(AppIcons.ArrowLeft, stringResource(R.string.back))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { reload++ }) { Icon(Icons.Outlined.Refresh, null) }
+                    IconButton(onClick = { reload++ }) { Icon(AppIcons.RefreshCw, null) }
                 },
             )
         },
@@ -102,9 +97,9 @@ fun FilesScreen(root: File, onBack: () -> Unit) {
                     ) {
                         Icon(
                             when {
-                                dir && open -> Icons.Outlined.FolderOpen
-                                dir -> Icons.Outlined.Folder
-                                else -> Icons.Outlined.Description
+                                dir && open -> AppIcons.Folder
+                                dir -> AppIcons.Folder
+                                else -> AppIcons.FileText
                             },
                             null,
                             Modifier.size(18.dp),

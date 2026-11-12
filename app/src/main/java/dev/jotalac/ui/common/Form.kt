@@ -1,5 +1,6 @@
 package dev.jotalac.ui.common
 
+import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,9 +26,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -245,7 +243,7 @@ fun <T> FormSelect(
                     Box(Modifier.width(8.dp))
                 }
                 Text(selected, Modifier.weight(1f), style = formTextStyle(), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Icon(Icons.Filled.KeyboardArrowDown, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(AppIcons.ChevronDown, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         DropdownMenu(
@@ -294,7 +292,7 @@ fun FormCheckbox(
             Modifier.size(18.dp).clip(MaterialTheme.shapes.small).background(if (checked) colors.onSurface else colors.surfaceContainerHighest),
             contentAlignment = Alignment.Center,
         ) {
-            if (checked) Icon(Icons.Filled.Check, null, Modifier.size(14.dp), tint = colors.surface)
+            if (checked) Icon(AppIcons.Check, null, Modifier.size(14.dp), tint = colors.surface)
         }
     }
 }
