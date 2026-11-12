@@ -137,9 +137,9 @@ fun EventChip(
     compact: Boolean = false,
     textScale: Float = 1f,
 ) {
-    // opaque, so overlapping events do not show through each other
-    val fill = color.copy(alpha = if (ghost) 0.2f else 0.5f).compositeOver(MaterialTheme.colorScheme.surface)
-    val content = contentColorOn(fill)
+    // see-through like the web client; the text color is picked against the fill over the surface
+    val fill = color.copy(alpha = if (ghost) 0.2f else 0.5f)
+    val content = contentColorOn(fill.compositeOver(MaterialTheme.colorScheme.surface))
     val titleLineHeight = TitleLineHeight * textScale
     BoxWithConstraints(
         modifier
