@@ -1,11 +1,11 @@
 package dev.jotalac.ui.settings
 
+import dev.jotalac.ui.theme.AppIcons
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,20 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -54,10 +46,19 @@ import dev.jotalac.data.TimeFormat
 import dev.jotalac.ui.calendar.ColorPicker
 import dev.jotalac.ui.common.ConfirmDialog
 import dev.jotalac.ui.common.MessageDialog
+import dev.jotalac.ui.common.FormButton
+import dev.jotalac.ui.common.FormCheckbox
+import dev.jotalac.ui.common.FormGap
+import dev.jotalac.ui.common.FormHint
+import dev.jotalac.ui.common.FormRow
+import dev.jotalac.ui.common.FormSelect
+import dev.jotalac.ui.common.formTextStyle
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.Alignment
 import dev.jotalac.ui.common.currentLocale
 import dev.jotalac.ui.common.longName
 import dev.jotalac.ui.common.userMessage
-import dev.jotalac.ui.event.Dropdown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -81,15 +82,17 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onFiles: () -> U
                 title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        Icon(AppIcons.ArrowLeft, stringResource(R.string.back))
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = FormGap, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(FormGap),
         ) {
             Section(stringResource(R.string.settings_appearance))
             LanguageSetting()
@@ -125,58 +128,67 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onFiles: () -> U
                 ),
             ) { v -> update { it.copy(timeFormat = v) } }
             val locale = currentLocale()
-            Dropdown(
-                label = stringResource(R.string.settings_week_start),
-                selected = settings.weekStart.longName(locale),
-                options = DayOfWeek.entries.map { it.longName(locale) to it },
-                enabled = true,
-                modifier = Modifier.fillMaxWidth(),
-            ) { v -> update { it.copy(weekStart = v) } }
-            Text(stringResource(R.string.settings_hour_range), style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                val hours = (0..24).map { "%02d:00".format(it) to it }
-                Dropdown(
-                    stringResource(R.string.settings_hour_start), "%02d:00".format(settings.dayViewStartHour), hours, true,
-                    Modifier.weight(1f),
-                ) { v -> update { it.copy(dayViewStartHour = v) } }
-                Dropdown(
-                    stringResource(R.string.settings_hour_end), "%02d:00".format(settings.dayViewEndHour), hours, true,
-                    Modifier.weight(1f),
-                ) { v -> update { it.copy(dayViewEndHour = v) } }
+            FormRow(stringResource(R.string.settings_week_start)) {
+                FormSelect(
+                    settings.weekStart.longName(locale),
+                    DayOfWeek.entries.map { it.longName(locale) to it },
+                    { v -> update { it.copy(weekStart = v) } },
+                    Modifier.width(SelectWidth),
+                )
             }
-            Dropdown(
-                label = stringResource(R.string.settings_drag_precision),
-                selected = stringResource(R.string.settings_minutes, settings.dragPrecisionMinutes),
-                options = listOf(15, 30, 60).map { stringResource(R.string.settings_minutes, it) to it },
-                enabled = true,
-                modifier = Modifier.fillMaxWidth(),
-            ) { v -> update { it.copy(dragPrecisionMinutes = v) } }
-            Text(stringResource(R.string.settings_default_color), style = MaterialTheme.typography.labelLarge)
-            ColorPicker(settings.defaultEventColor) { v -> update { it.copy(defaultEventColor = v) } }
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.settings_background_sync)) },
-                supportingContent = { Text(stringResource(R.string.settings_background_sync_summary)) },
-                trailingContent = {
-                    Switch(settings.backgroundSync, { v -> update { it.copy(backgroundSync = v) } })
-                },
-            )
+            FormRow(stringResource(R.string.settings_hour_range)) {
+                val hours = (0..24).map { "%02d:00".format(it) to it }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FormSelect(
+                        "%02d:00".format(settings.dayViewStartHour), hours,
+                        { v -> update { it.copy(dayViewStartHour = v) } }, Modifier.width(HourSelectWidth),
+                    )
+                    Text("–", style = formTextStyle())
+                    FormSelect(
+                        "%02d:00".format(settings.dayViewEndHour), hours,
+                        { v -> update { it.copy(dayViewEndHour = v) } }, Modifier.width(HourSelectWidth),
+                    )
+                }
+            }
+            CheckSetting(
+                stringResource(R.string.settings_lock_scroll), stringResource(R.string.settings_lock_scroll_summary),
+                settings.lockScroll,
+            ) { v -> update { it.copy(lockScroll = v) } }
+            FormRow(stringResource(R.string.settings_drag_precision)) {
+                FormSelect(
+                    stringResource(R.string.settings_minutes, settings.dragPrecisionMinutes),
+                    listOf(15, 30, 60).map { stringResource(R.string.settings_minutes, it) to it },
+                    { v -> update { it.copy(dragPrecisionMinutes = v) } },
+                    Modifier.width(SelectWidth),
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.settings_default_color), style = formTextStyle())
+                ColorPicker(settings.defaultEventColor) { v -> update { it.copy(defaultEventColor = v) } }
+            }
+            CheckSetting(
+                stringResource(R.string.settings_background_sync), stringResource(R.string.settings_background_sync_summary),
+                settings.backgroundSync,
+            ) { v -> update { it.copy(backgroundSync = v) } }
 
-            HorizontalDivider()
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             DataManagement(container)
 
-            HorizontalDivider()
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Section(stringResource(R.string.settings_advanced))
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.settings_files)) },
-                supportingContent = { Text(stringResource(R.string.settings_files_summary)) },
-                leadingContent = { Icon(Icons.Outlined.FolderOpen, null) },
-                trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null) },
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onFiles),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                FormButton(
+                    stringResource(R.string.settings_files), onFiles, Modifier.fillMaxWidth(), icon = AppIcons.Folder,
+                )
+                FormHint(stringResource(R.string.settings_files_summary))
+            }
             Spacer(Modifier.size(24.dp))
         }
     }
 }
+
+private val SelectWidth = 176.dp
+private val HourSelectWidth = 92.dp
 
 @Composable
 private fun Section(title: String) {
@@ -185,14 +197,22 @@ private fun Section(title: String) {
 
 @Composable
 private fun <T> Setting(label: String, value: T, options: List<Pair<T, Int>>, onChange: (T) -> Unit) {
-    Dropdown(
-        label = label,
-        selected = stringResource(options.first { it.first == value }.second),
-        options = options.map { stringResource(it.second) to it.first },
-        enabled = true,
-        modifier = Modifier.fillMaxWidth(),
-        onSelect = onChange,
-    )
+    FormRow(label) {
+        FormSelect(
+            stringResource(options.first { it.first == value }.second),
+            options.map { stringResource(it.second) to it.first },
+            onChange,
+            Modifier.width(SelectWidth),
+        )
+    }
+}
+
+@Composable
+private fun CheckSetting(label: String, summary: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Column {
+        FormCheckbox(label, checked, onChange, Modifier.fillMaxWidth(), spread = true)
+        FormHint(summary)
+    }
 }
 
 @Composable
@@ -200,15 +220,16 @@ private fun LanguageSetting() {
     val current = AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore(',')
     val system = stringResource(R.string.settings_language_system)
     val options = listOf(system to "") + LANGUAGES.map { it.second to it.first }
-    Dropdown(
-        label = stringResource(R.string.settings_language),
-        selected = options.firstOrNull { it.second == current }?.first ?: system,
-        options = options,
-        enabled = true,
-        modifier = Modifier.fillMaxWidth(),
-    ) { tag ->
-        AppCompatDelegate.setApplicationLocales(
-            if (tag.isEmpty()) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.forLanguageTags(tag)
+    FormRow(stringResource(R.string.settings_language)) {
+        FormSelect(
+            options.firstOrNull { it.second == current }?.first ?: system,
+            options,
+            { tag ->
+                AppCompatDelegate.setApplicationLocales(
+                    if (tag.isEmpty()) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.forLanguageTags(tag)
+                )
+            },
+            Modifier.width(SelectWidth),
         )
     }
 }
@@ -241,44 +262,46 @@ private fun DataManagement(container: AppContainer) {
         }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(FormGap)) {
         Section(stringResource(R.string.data_title))
         val all = stringResource(R.string.data_all)
-        Dropdown(
-            label = stringResource(R.string.data_export_calendar),
-            selected = exportCalendar.ifEmpty { all },
-            options = listOf(all to "") + calendars.map { it.name to it.name },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            exportCalendar = it
-            // iCal subscriptions cannot be exported as a Git ZIP.
-            if (calendars.firstOrNull { c -> c.name == it }?.isICal == true) zip = false
+        FormRow(stringResource(R.string.data_export_calendar)) {
+            FormSelect(
+                exportCalendar.ifEmpty { all },
+                listOf(all to "") + calendars.map { it.name to it.name },
+                {
+                    exportCalendar = it
+                    // iCal subscriptions cannot be exported as a Git ZIP.
+                    if (calendars.firstOrNull { c -> c.name == it }?.isICal == true) zip = false
+                },
+                Modifier.width(SelectWidth),
+                enabled = !busy,
+            )
         }
-        Dropdown(
-            label = stringResource(R.string.data_export_format),
-            selected = if (zip) "ZIP" else "iCalendar",
-            options = if (selectedIsICal) listOf("iCalendar" to false) else listOf("ZIP" to true, "iCalendar" to false),
+        FormRow(stringResource(R.string.data_export_format)) {
+            FormSelect(
+                if (zip) "ZIP" else "iCalendar",
+                if (selectedIsICal) listOf("iCalendar" to false) else listOf("ZIP" to true, "iCalendar" to false),
+                { zip = it },
+                Modifier.width(SelectWidth),
+                enabled = !busy,
+            )
+        }
+        FormButton(
+            stringResource(R.string.data_export),
+            { if (zip) createZip.launch(fileName) else createIcs.launch(fileName) },
+            Modifier.fillMaxWidth(),
             enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) { zip = it }
-        Button(
-            shape = MaterialTheme.shapes.small,
-            onClick = { if (zip) createZip.launch(fileName) else createIcs.launch(fileName) },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.data_export)) }
-        Text(
-            stringResource(R.string.data_restore_warning),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
         )
-        OutlinedButton(
-            shape = MaterialTheme.shapes.small,
-            onClick = { openZip.launch(arrayOf("application/zip", "application/octet-stream")) },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.data_import_zip)) }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FormButton(
+                stringResource(R.string.data_import_zip),
+                { openZip.launch(arrayOf("application/zip", "application/octet-stream")) },
+                Modifier.fillMaxWidth(),
+                enabled = !busy,
+            )
+            FormHint(stringResource(R.string.data_restore_warning), color = MaterialTheme.colorScheme.error)
+        }
     }
 
     val restored = stringResource(R.string.data_restore_success)

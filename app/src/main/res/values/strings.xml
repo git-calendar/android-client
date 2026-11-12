@@ -11,7 +11,6 @@
     <string name="calendars_title">Calendars</string>
     <string name="settings">Settings</string>
     <string name="guide">Guide</string>
-    <string name="sync_now">Sync calendars</string>
     <string name="source_code">Source code on GitHub</string>
     <string name="open_drawer">Open menu</string>
     <string name="previous_period">Previous period</string>
@@ -185,6 +184,8 @@
     <string name="settings_drag_precision">Drag precision</string>
     <string name="settings_minutes">%1$d min</string>
     <string name="settings_hour_range">Hour range</string>
+    <string name="settings_lock_scroll">Fit hours to screen</string>
+    <string name="settings_lock_scroll_summary">Show the hour range without scrolling. Events outside it zoom the view out.</string>
     <string name="settings_hour_start">Start</string>
     <string name="settings_hour_end">End</string>
     <string name="settings_default_color">Default event color</string>

@@ -26,6 +26,8 @@ private val GitDarkScheme = darkColorScheme(
     secondaryContainer = DarkBtnStrong,
     onSecondaryContainer = DarkText,
     tertiary = Color(0xFF22C55E),
+    error = DarkGit,
+    onError = Color.White,
     background = DarkBg,
     onBackground = DarkText,
     surface = DarkBg,
@@ -52,6 +54,8 @@ private val GitLightScheme = lightColorScheme(
     secondaryContainer = LightBtn,
     onSecondaryContainer = LightText,
     tertiary = Color(0xFF15803D),
+    error = LightGit,
+    onError = Color.White,
     background = LightBg,
     onBackground = LightText,
     surface = LightBg,
@@ -82,7 +86,7 @@ val SquareShapes = Shapes(
 @Composable
 fun GitCalendarTheme(
     themeMode: ThemeMode = ThemeMode.System,
-    colorSource: ColorSource = ColorSource.Dynamic,
+    colorSource: ColorSource = ColorSource.Git,
     content: @Composable () -> Unit,
 ) {
     val dark = when (themeMode) {

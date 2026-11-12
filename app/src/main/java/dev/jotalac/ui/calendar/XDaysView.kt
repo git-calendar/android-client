@@ -8,6 +8,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.Stable
@@ -36,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,10 +51,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -88,8 +93,11 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 
 internal val GutterWidth = 44.dp
-private val HeaderHeight = 56.dp
+private val HeaderHeight = 28.dp
 private val DividerHeight = 1.dp
+
+/** The lines above and below the all-day bar. */
+private val DividersHeight = DividerHeight * 2
 private val TitleHeight = 28.dp
 private val TitleGap = 4.dp
 private val ColumnGap = 4.dp
@@ -128,6 +136,9 @@ class TimelineState internal constructor(
     /** Wanted all-day bar height reported by each composed page. */
     internal val allDayHeights = mutableStateMapOf<Int, Dp>()
 
+    /** Configured hours of each composed page, grown to fit its timed events; used when scrolling is locked. */
+    internal val ranges = mutableStateMapOf<Int, HourRange>()
+
     /** All-day bar height of the shown page, following the swipe towards a neighbor of a different height. */
     internal fun allDayHeight(pager: PagerState): Dp {
         val current = pager.currentPage
@@ -160,25 +171,41 @@ fun XDaysPager(
 ) {
     val times = rememberTimeFormatter(settings)
     val configured = HourRange(settings.dayViewStartHour, settings.timelineEndHour)
+    val locked = settings.lockScroll
     // Every page shows the whole day, so the hour rows never change while swiping. The configured
     // hours fill the screen and are where the grid starts; the others are a scroll away.
-    val range = configured.fullDay()
+    // Locked, the settled page's hours fill the screen instead, widened to fit its events, and nothing scrolls.
+    val range = if (locked) timeline.ranges[pager.settledPage] ?: configured else configured.fullDay()
     val allDayHeight = remember(timeline, pager) { { timeline.allDayHeight(pager) } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Hours keep their height when a page's all-day bar grows; the grid then scrolls a little instead.
-        val viewport = (maxHeight - HeaderHeight - MinAllDayHeight - DividerHeight).coerceAtLeast(0.dp)
+        val viewport = (maxHeight - HeaderHeight - MinAllDayHeight - DividersHeight).coerceAtLeast(0.dp)
         val hourHeight = viewport / configured.hours * timeline.zoom
-        val gridHeight = hourHeight * range.hours
+        // locked, the grid takes exactly the height under the all-day bar, which follows a swipe
+        val fitHeight by remember(maxHeight, allDayHeight) {
+            derivedStateOf { (maxHeight - HeaderHeight - allDayHeight() - DividersHeight).coerceAtLeast(0.dp) }
+        }
+        val gridHeight = if (locked) fitHeight else hourHeight * range.hours
         val frame = TimelineFrame(range, gridHeight, allDayHeight)
         val startPx = with(LocalDensity.current) { (hourHeight * (configured.startHour - range.startHour)).roundToPx() }
-        LaunchedEffect(timeline, configured.startHour) {
+        LaunchedEffect(timeline, configured.startHour, locked) {
+            if (locked) {
+                timeline.shownStartHour = null // scroll to the configured start again once unlocked
+                return@LaunchedEffect
+            }
             if (timeline.shownStartHour == configured.startHour) return@LaunchedEffect
             snapshotFlow { timeline.scroll.maxValue }.first { it > 0 || startPx == 0 } // wait for the first layout
             timeline.scroll.scrollTo(startPx)
             timeline.shownStartHour = configured.startHour
         }
         Row(Modifier.fillMaxSize()) {
-            HourColumn(frame, times, timeline.scroll)
+            HourColumn(frame, times, timeline.scroll, locked)
+            // separates the hour column from the days, from the top of the all-day bar down
+            VerticalDivider(
+                Modifier.padding(top = HeaderHeight),
+                thickness = DividerHeight,
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
             HorizontalPager(pager, Modifier.weight(1f).fillMaxHeight(), beyondViewportPageCount = 1, key = { it }) {
                 page(it, frame)
             }
@@ -187,19 +214,23 @@ fun XDaysPager(
 }
 
 @Composable
-private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: ScrollState) {
+private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: ScrollState, locked: Boolean) {
     Column(Modifier.width(GutterWidth).fillMaxHeight()) {
         Spacer(Modifier.height(HeaderHeight))
+        HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
         Text(
             stringResource(R.string.all_day),
-            Modifier.fillMaxWidth().layoutHeight(frame.allDayHeight).padding(top = 4.dp, end = 4.dp),
+            Modifier.fillMaxWidth().layoutHeight(frame.allDayHeight).padding(top = 2.dp, end = 4.dp),
             style = MaterialTheme.typography.labelSmall,
             textAlign = TextAlign.End,
             fontSize = 10.sp,
+            // tight lines, so a label wrapped in the narrow gutter ("Celý den") fits the one-row bar
+            lineHeight = 11.sp,
+            maxLines = 2,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
-        Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll)) {
+        Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll, enabled = !locked)) {
             HourGutter(frame.range, times, frame.gridHeight)
             NowLabel(frame, times)
         }
@@ -298,48 +329,41 @@ fun XDaysView(
     val split = remember(events, start, days, configured) { TimelineSplit.split(events, start, days, configured) }
     val dates = remember(start, days) { List(days) { start.plusDays(it.toLong()) } }
 
+    LaunchedEffect(timeline, page, split.range) { timeline.ranges[page] = split.range }
     DisposableEffect(timeline, page) {
-        onDispose { timeline.allDayHeights.remove(page) }
+        onDispose {
+            timeline.allDayHeights.remove(page)
+            timeline.ranges.remove(page)
+        }
     }
 
     Column(modifier.fillMaxSize()) {
         DayHeader(dates)
+        HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
         AllDayBar(dates, split.allDay, page, timeline, frame, vm, actions)
         HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
         TimedGrid(dates, split.timed, frame, timeline, settings, vm, actions, Modifier.weight(1f))
     }
 }
 
+/** One line of dates like the web client: "12. Thu", or "12. T" on a phone; today in the primary color. */
 @Composable
 private fun DayHeader(dates: List<LocalDate>) {
     val locale = currentLocale()
     val today = LocalDate.now()
-    BoxWithConstraints(Modifier.fillMaxWidth().height(HeaderHeight)) {
-        val narrow = maxWidth / dates.size < 56.dp
-        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            dates.forEach { date ->
-                val isToday = date == today
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        if (narrow) date.dayOfWeek.narrowName(locale) else date.dayOfWeek.shortName(locale),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Box(
-                        Modifier
-                            .size(30.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(if (isToday) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            date.dayOfMonth.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
+    val narrow = LocalConfiguration.current.screenWidthDp < 500
+    Row(Modifier.fillMaxWidth().height(HeaderHeight), verticalAlignment = Alignment.CenterVertically) {
+        dates.forEach { date ->
+            val day = if (narrow) date.dayOfWeek.narrowName(locale) else date.dayOfWeek.shortName(locale)
+            Text(
+                "${date.dayOfMonth}. $day",
+                Modifier.weight(1f).padding(horizontal = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (date == today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+            )
         }
     }
 }
@@ -379,10 +403,18 @@ private fun AllDayBar(
     val wanted = minOf(height, MaxAllDayHeight)
     LaunchedEffect(timeline, page, wanted) { timeline.allDayHeights[page] = wanted }
 
+    val gridColor = MaterialTheme.colorScheme.outlineVariant
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
             .layoutHeight(frame.allDayHeight)
+            // day lines like the timed grid, drawn before the scroll so they span the whole bar
+            .drawBehind {
+                val colPx = size.width / dates.size
+                for (d in 1 until dates.size) {
+                    drawLine(gridColor, Offset(d * colPx, 0f), Offset(d * colPx, size.height), 1f)
+                }
+            }
             .verticalScroll(rememberScrollState()),
     ) {
         val colWidth = maxWidth / dates.size
@@ -539,11 +571,12 @@ private fun TimedGrid(
     modifier: Modifier,
 ) {
     val gridColor = MaterialTheme.colorScheme.outlineVariant
+    val locked = settings.lockScroll
     Box(
         modifier
             .fillMaxWidth()
-            .pinchZoom { timeline.zoom = (timeline.zoom * it).coerceIn(1f, 4f) }
-            .verticalScroll(timeline.scroll),
+            .then(if (locked) Modifier else Modifier.pinchZoom { timeline.zoom = (timeline.zoom * it).coerceIn(1f, 4f) })
+            .verticalScroll(timeline.scroll, enabled = !locked),
     ) {
         Box(Modifier.fillMaxWidth().height(frame.gridHeight)) {
             GridColumns(dates, columns, frame.range, settings, vm, actions, frame.gridHeight, gridColor)
@@ -588,6 +621,7 @@ private fun GridColumns(
     var drag by remember { mutableStateOf<TimedDrag?>(null) }
     val today = LocalDate.now()
     val nowTime = currentTime()
+    val times = rememberTimeFormatter(settings)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
@@ -738,23 +772,28 @@ private fun GridColumns(
             }
             placed.forEach { (event, rect) ->
                 if (event === hiddenEvent) return@forEach
-                TimedEventChip(event, rect, vm, textScale)
+                TimedEventChip(event, rect, vm, times, textScale)
             }
 
             // Current time line across the grid, with a dot in today's column; the time is in the hour column.
             minutesIntoGrid(nowTime, range)?.let { nowMinutes ->
-                val y = gridHeight * (nowMinutes.toFloat() / (range.hours * 60))
-                Box(Modifier.offset(y = y - 1.dp).fillMaxWidth().height(2.dp).background(primary.copy(alpha = 0.35f)))
-                if (todayIndex >= 0) {
-                    Box(
-                        Modifier.offset(x = colWidth * todayIndex, y = y - 1.dp).width(colWidth).height(2.dp)
-                            .background(primary),
-                    )
-                    // inside the column: the pager clips anything left of the first column
-                    Box(
-                        Modifier.offset(x = colWidth * todayIndex, y = y - 5.dp).size(10.dp)
-                            .clip(RoundedCornerShape(3.dp)).background(primary),
-                    )
+                val background = MaterialTheme.colorScheme.background
+                Canvas(Modifier.fillMaxSize()) {
+                    val y = size.height * (nowMinutes.toFloat() / (range.hours * 60))
+                    drawLine(primary.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+                    if (todayIndex < 0) return@Canvas
+                    val left = todayIndex * colPx
+                    val line = 2.dp.toPx()
+                    // centered on today's left edge; in the first column the pager clips its left half
+                    val square = 10.dp.toPx()
+                    val outline = 1f
+                    // a background-colored outline under both, so the line and square stand out as one shape
+                    drawRect(background, Offset(left - outline, y - line / 2 - outline),
+                        androidx.compose.ui.geometry.Size(colPx + outline * 2, line + outline * 2))
+                    drawRect(background, Offset(left - square / 2 - outline, y - square / 2 - outline),
+                        androidx.compose.ui.geometry.Size(square + outline * 2, square + outline * 2))
+                    drawRect(primary, Offset(left, y - line / 2), androidx.compose.ui.geometry.Size(colPx, line))
+                    drawRect(primary, Offset(left - square / 2, y - square / 2), androidx.compose.ui.geometry.Size(square, square))
                 }
             }
 
@@ -770,7 +809,7 @@ private fun GridColumns(
                 val top = gridMinutes(preview.from, d.day).toFloat() / math.totalMinutes * heightPx
                 val bottom = gridMinutes(preview.to, d.day).toFloat() / math.totalMinutes * heightPx
                 val rect = Rect(d.day * colPx + 1f, top, (d.day + 1) * colPx - 2f, bottom)
-                TimedEventChip(preview, rect, vm, textScale, preview = true)
+                TimedEventChip(preview, rect, vm, times, textScale, preview = true)
             }
         }
     }
@@ -781,6 +820,7 @@ private fun TimedEventChip(
     event: Event,
     rect: Rect,
     vm: CalendarViewModel,
+    times: TimeFormatter,
     textScale: Float,
     preview: Boolean = false,
 ) {
@@ -789,8 +829,7 @@ private fun TimedEventChip(
     val heightDp = with(density) { (rect.height - 2f).coerceAtLeast(1f).toDp() }
     EventChip(
         title = event.title.ifEmpty { stringResource(R.string.event_new) },
-        // the location rather than the time, which the chip's position already shows
-        subtitle = event.location.trim().ifEmpty { null },
+        subtitle = times.range(event.from, event.to),
         color = color,
         ghost = preview,
         compact = heightDp < 30.dp * textScale,
