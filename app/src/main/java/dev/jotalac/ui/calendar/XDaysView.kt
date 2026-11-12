@@ -56,6 +56,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -91,7 +93,7 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 
 internal val GutterWidth = 44.dp
-private val HeaderHeight = 56.dp
+private val HeaderHeight = 28.dp
 private val DividerHeight = 1.dp
 
 /** The lines above and below the all-day bar. */
@@ -344,36 +346,24 @@ fun XDaysView(
     }
 }
 
+/** One line of dates like the web client: "12. Thu", or "12. T" on a phone; today in the primary color. */
 @Composable
 private fun DayHeader(dates: List<LocalDate>) {
     val locale = currentLocale()
     val today = LocalDate.now()
-    BoxWithConstraints(Modifier.fillMaxWidth().height(HeaderHeight)) {
-        val narrow = maxWidth / dates.size < 56.dp
-        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            dates.forEach { date ->
-                val isToday = date == today
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        if (narrow) date.dayOfWeek.narrowName(locale) else date.dayOfWeek.shortName(locale),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Box(
-                        Modifier
-                            .size(30.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(if (isToday) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            date.dayOfMonth.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
+    val narrow = LocalConfiguration.current.screenWidthDp < 500
+    Row(Modifier.fillMaxWidth().height(HeaderHeight), verticalAlignment = Alignment.CenterVertically) {
+        dates.forEach { date ->
+            val day = if (narrow) date.dayOfWeek.narrowName(locale) else date.dayOfWeek.shortName(locale)
+            Text(
+                "${date.dayOfMonth}. $day",
+                Modifier.weight(1f).padding(horizontal = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (date == today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+            )
         }
     }
 }
