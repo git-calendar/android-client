@@ -144,6 +144,13 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onFiles: () -> U
                     Modifier.weight(1f),
                 ) { v -> update { it.copy(dayViewEndHour = v) } }
             }
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_lock_scroll)) },
+                supportingContent = { Text(stringResource(R.string.settings_lock_scroll_summary)) },
+                trailingContent = {
+                    Switch(settings.lockScroll, { v -> update { it.copy(lockScroll = v) } })
+                },
+            )
             Dropdown(
                 label = stringResource(R.string.settings_drag_precision),
                 selected = stringResource(R.string.settings_minutes, settings.dragPrecisionMinutes),

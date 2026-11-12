@@ -30,6 +30,8 @@ data class Settings(
     /** 0 means midnight (24); a value not after [dayViewStartHour] runs past midnight. */
     val dayViewEndHour: Int = 0,
     val dragPrecisionMinutes: Int = 30,
+    /** Fits the configured hours to the screen without scrolling, zooming out for events outside them. */
+    val lockScroll: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.System,
     val colorSource: ColorSource = ColorSource.Git,
     val defaultEventColor: String = "gray",
@@ -55,6 +57,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val dayStart = intPreferencesKey("day_view_start_hour")
         val dayEnd = intPreferencesKey("day_view_end_hour")
         val dragPrecision = intPreferencesKey("drag_precision_minutes")
+        val lockScroll = booleanPreferencesKey("lock_scroll")
         val themeMode = stringPreferencesKey("theme_mode")
         val colorSource = stringPreferencesKey("color_source")
         val defaultEventColor = stringPreferencesKey("default_event_color")
@@ -82,6 +85,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             dayViewStartHour = p[Keys.dayStart] ?: defaults.dayViewStartHour,
             dayViewEndHour = p[Keys.dayEnd] ?: defaults.dayViewEndHour,
             dragPrecisionMinutes = p[Keys.dragPrecision] ?: defaults.dragPrecisionMinutes,
+            lockScroll = p[Keys.lockScroll] ?: defaults.lockScroll,
             themeMode = enumOr(p[Keys.themeMode], defaults.themeMode),
             colorSource = enumOr(p[Keys.colorSource], defaults.colorSource),
             defaultEventColor = p[Keys.defaultEventColor] ?: defaults.defaultEventColor,
@@ -101,6 +105,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[Keys.dayStart] = s.dayViewStartHour
             p[Keys.dayEnd] = s.dayViewEndHour
             p[Keys.dragPrecision] = s.dragPrecisionMinutes
+            p[Keys.lockScroll] = s.lockScroll
             p[Keys.themeMode] = s.themeMode.name
             p[Keys.colorSource] = s.colorSource.name
             p[Keys.defaultEventColor] = s.defaultEventColor

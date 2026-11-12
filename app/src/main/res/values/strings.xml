@@ -185,6 +185,8 @@
     <string name="settings_drag_precision">Drag precision</string>
     <string name="settings_minutes">%1$d min</string>
     <string name="settings_hour_range">Hour range</string>
+    <string name="settings_lock_scroll">Fit hours to screen</string>
+    <string name="settings_lock_scroll_summary">Show the hour range without scrolling. Events outside it zoom the view out.</string>
     <string name="settings_hour_start">Start</string>
     <string name="settings_hour_end">End</string>
     <string name="settings_default_color">Default event color</string>
