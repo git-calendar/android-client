@@ -1,7 +1,7 @@
 package dev.jotalac.core
 
-import dev.jotalac.core.api.Api
-import dev.jotalac.core.api.Api_
+import api.Api
+import api.Api_
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext

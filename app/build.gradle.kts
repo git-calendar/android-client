@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -49,34 +47,8 @@ android {
     }
 }
 
-// The Go core is bound with gomobile from ../git-calendar-core (pkg/api) into app/libs/core.aar (see the root Makefile).
-// `go` is looked up from `go.path` in local.properties, then the usual install locations.
-val localProps = Properties().apply {
-    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
-}
-val goBinary: String = localProps.getProperty("go.path")
-    ?: listOf("/opt/homebrew/bin/go", "/usr/local/go/bin/go", "/usr/local/bin/go")
-        .firstOrNull { File(it).exists() }
-    ?: "go"
-val sdkDir: String? = localProps.getProperty("sdk.dir")
-
-val buildCoreAar by tasks.registering(Exec::class) {
-    description = "Builds app/libs/core.aar from git-calendar-core with gomobile"
-    workingDir = rootProject.projectDir
-    // the core is a checkout next to this repository
-    inputs.dir(rootProject.file("../git-calendar-core/pkg"))
-    inputs.file(rootProject.file("../git-calendar-core/go.mod"))
-    outputs.file(file("libs/core.aar"))
-    commandLine(
-        buildList {
-            add("make"); add("core"); add("GO=$goBinary")
-            sdkDir?.let { add("ANDROID_HOME=$it") }
-        }
-    )
-}
-tasks.named("preBuild") { dependsOn(buildCoreAar) }
-
 dependencies {
+    // downloaded from git-calendar/core releases with `make fetch-core`
     implementation(files("libs/core.aar"))
 
     implementation(platform(libs.androidx.compose.bom))
