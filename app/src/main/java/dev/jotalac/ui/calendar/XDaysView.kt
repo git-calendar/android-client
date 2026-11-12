@@ -772,11 +772,8 @@ private fun GridColumns(
                         Modifier.offset(x = colWidth * todayIndex, y = y - 1.dp).width(colWidth).height(2.dp)
                             .background(primary),
                     )
-                    // inside the column: the pager clips anything left of the first column
-                    Box(
-                        Modifier.offset(x = colWidth * todayIndex, y = y - 5.dp).size(10.dp)
-                            .clip(RoundedCornerShape(3.dp)).background(primary),
-                    )
+                    // centered on today's left edge; in the first column the pager clips its left half
+                    Box(Modifier.offset(x = colWidth * todayIndex - 5.dp, y = y - 5.dp).size(10.dp).background(primary))
                 }
             }
 
