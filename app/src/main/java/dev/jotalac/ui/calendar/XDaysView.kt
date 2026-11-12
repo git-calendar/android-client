@@ -8,6 +8,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.Stable
@@ -128,6 +129,9 @@ class TimelineState internal constructor(
     /** Wanted all-day bar height reported by each composed page. */
     internal val allDayHeights = mutableStateMapOf<Int, Dp>()
 
+    /** Configured hours of each composed page, grown to fit its timed events; used when scrolling is locked. */
+    internal val ranges = mutableStateMapOf<Int, HourRange>()
+
     /** All-day bar height of the shown page, following the swipe towards a neighbor of a different height. */
     internal fun allDayHeight(pager: PagerState): Dp {
         val current = pager.currentPage
@@ -160,25 +164,35 @@ fun XDaysPager(
 ) {
     val times = rememberTimeFormatter(settings)
     val configured = HourRange(settings.dayViewStartHour, settings.timelineEndHour)
+    val locked = settings.lockScroll
     // Every page shows the whole day, so the hour rows never change while swiping. The configured
     // hours fill the screen and are where the grid starts; the others are a scroll away.
-    val range = configured.fullDay()
+    // Locked, the settled page's hours fill the screen instead, widened to fit its events, and nothing scrolls.
+    val range = if (locked) timeline.ranges[pager.settledPage] ?: configured else configured.fullDay()
     val allDayHeight = remember(timeline, pager) { { timeline.allDayHeight(pager) } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Hours keep their height when a page's all-day bar grows; the grid then scrolls a little instead.
         val viewport = (maxHeight - HeaderHeight - MinAllDayHeight - DividerHeight).coerceAtLeast(0.dp)
         val hourHeight = viewport / configured.hours * timeline.zoom
-        val gridHeight = hourHeight * range.hours
+        // locked, the grid takes exactly the height under the all-day bar, which follows a swipe
+        val fitHeight by remember(maxHeight, allDayHeight) {
+            derivedStateOf { (maxHeight - HeaderHeight - allDayHeight() - DividerHeight).coerceAtLeast(0.dp) }
+        }
+        val gridHeight = if (locked) fitHeight else hourHeight * range.hours
         val frame = TimelineFrame(range, gridHeight, allDayHeight)
         val startPx = with(LocalDensity.current) { (hourHeight * (configured.startHour - range.startHour)).roundToPx() }
-        LaunchedEffect(timeline, configured.startHour) {
+        LaunchedEffect(timeline, configured.startHour, locked) {
+            if (locked) {
+                timeline.shownStartHour = null // scroll to the configured start again once unlocked
+                return@LaunchedEffect
+            }
             if (timeline.shownStartHour == configured.startHour) return@LaunchedEffect
             snapshotFlow { timeline.scroll.maxValue }.first { it > 0 || startPx == 0 } // wait for the first layout
             timeline.scroll.scrollTo(startPx)
             timeline.shownStartHour = configured.startHour
         }
         Row(Modifier.fillMaxSize()) {
-            HourColumn(frame, times, timeline.scroll)
+            HourColumn(frame, times, timeline.scroll, locked)
             HorizontalPager(pager, Modifier.weight(1f).fillMaxHeight(), beyondViewportPageCount = 1, key = { it }) {
                 page(it, frame)
             }
@@ -187,7 +201,7 @@ fun XDaysPager(
 }
 
 @Composable
-private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: ScrollState) {
+private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: ScrollState, locked: Boolean) {
     Column(Modifier.width(GutterWidth).fillMaxHeight()) {
         Spacer(Modifier.height(HeaderHeight))
         Text(
@@ -202,7 +216,7 @@ private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: Scrol
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
-        Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll)) {
+        Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll, enabled = !locked)) {
             HourGutter(frame.range, times, frame.gridHeight)
             NowLabel(frame, times)
         }
@@ -301,8 +315,12 @@ fun XDaysView(
     val split = remember(events, start, days, configured) { TimelineSplit.split(events, start, days, configured) }
     val dates = remember(start, days) { List(days) { start.plusDays(it.toLong()) } }
 
+    LaunchedEffect(timeline, page, split.range) { timeline.ranges[page] = split.range }
     DisposableEffect(timeline, page) {
-        onDispose { timeline.allDayHeights.remove(page) }
+        onDispose {
+            timeline.allDayHeights.remove(page)
+            timeline.ranges.remove(page)
+        }
     }
 
     Column(modifier.fillMaxSize()) {
@@ -542,11 +560,12 @@ private fun TimedGrid(
     modifier: Modifier,
 ) {
     val gridColor = MaterialTheme.colorScheme.outlineVariant
+    val locked = settings.lockScroll
     Box(
         modifier
             .fillMaxWidth()
-            .pinchZoom { timeline.zoom = (timeline.zoom * it).coerceIn(1f, 4f) }
-            .verticalScroll(timeline.scroll),
+            .then(if (locked) Modifier else Modifier.pinchZoom { timeline.zoom = (timeline.zoom * it).coerceIn(1f, 4f) })
+            .verticalScroll(timeline.scroll, enabled = !locked),
     ) {
         Box(Modifier.fillMaxWidth().height(frame.gridHeight)) {
             GridColumns(dates, columns, frame.range, settings, vm, actions, frame.gridHeight, gridColor)

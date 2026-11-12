@@ -172,6 +172,8 @@
     <string name="settings_week_start">Začátek týdne</string>
     <string name="settings_drag_precision">Přesnost při tažení</string>
     <string name="settings_hour_range">Rozmezí hodin</string>
+    <string name="settings_lock_scroll">Přizpůsobit hodiny obrazovce</string>
+    <string name="settings_lock_scroll_summary">Zobrazit rozmezí hodin bez posouvání. Události mimo něj zobrazení oddálí.</string>
     <string name="settings_hour_start">Začátek</string>
     <string name="settings_hour_end">Konec</string>
     <string name="settings_default_color">Výchozí barva událostí</string>
