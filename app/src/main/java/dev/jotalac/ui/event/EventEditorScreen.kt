@@ -103,7 +103,7 @@ import java.time.format.FormatStyle
 /** Width of the "From:" and "To:" labels, so the date and time fields line up. */
 private val DateLabelWidth = 44.dp
 
-/** Indent of the repeat end row under the repeat select, like the web client on a phone. */
+/** Indent of the repeat end and reminder rows under their headings, like the web client on a phone. */
 private val SubRowIndent = 24.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -494,7 +494,11 @@ private fun ReminderFields(vm: EventEditorViewModel, enabled: Boolean, onAdd: ()
             }
         }
         vm.reminders.toList().forEachIndexed { index, minutes ->
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                Modifier.padding(start = SubRowIndent),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 // Presets used by other rows are not offered again; a non-preset value from imported data stays visible.
                 val options = (REMINDER_PRESETS.sorted() + minutes).distinct().sorted()
                     .filter { it == minutes || it !in vm.reminders }
