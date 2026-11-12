@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -400,10 +401,18 @@ private fun AllDayBar(
     val wanted = minOf(height, MaxAllDayHeight)
     LaunchedEffect(timeline, page, wanted) { timeline.allDayHeights[page] = wanted }
 
+    val gridColor = MaterialTheme.colorScheme.outlineVariant
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
             .layoutHeight(frame.allDayHeight)
+            // day lines like the timed grid, drawn before the scroll so they span the whole bar
+            .drawBehind {
+                val colPx = size.width / dates.size
+                for (d in 1 until dates.size) {
+                    drawLine(gridColor, Offset(d * colPx, 0f), Offset(d * colPx, size.height), 1f)
+                }
+            }
             .verticalScroll(rememberScrollState()),
     ) {
         val colWidth = maxWidth / dates.size
