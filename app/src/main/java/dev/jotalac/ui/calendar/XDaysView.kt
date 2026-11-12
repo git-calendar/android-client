@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -92,6 +93,9 @@ import kotlin.math.roundToInt
 internal val GutterWidth = 44.dp
 private val HeaderHeight = 56.dp
 private val DividerHeight = 1.dp
+
+/** The lines above and below the all-day bar. */
+private val DividersHeight = DividerHeight * 2
 private val TitleHeight = 28.dp
 private val TitleGap = 4.dp
 private val ColumnGap = 4.dp
@@ -173,11 +177,11 @@ fun XDaysPager(
     val allDayHeight = remember(timeline, pager) { { timeline.allDayHeight(pager) } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Hours keep their height when a page's all-day bar grows; the grid then scrolls a little instead.
-        val viewport = (maxHeight - HeaderHeight - MinAllDayHeight - DividerHeight).coerceAtLeast(0.dp)
+        val viewport = (maxHeight - HeaderHeight - MinAllDayHeight - DividersHeight).coerceAtLeast(0.dp)
         val hourHeight = viewport / configured.hours * timeline.zoom
         // locked, the grid takes exactly the height under the all-day bar, which follows a swipe
         val fitHeight by remember(maxHeight, allDayHeight) {
-            derivedStateOf { (maxHeight - HeaderHeight - allDayHeight() - DividerHeight).coerceAtLeast(0.dp) }
+            derivedStateOf { (maxHeight - HeaderHeight - allDayHeight() - DividersHeight).coerceAtLeast(0.dp) }
         }
         val gridHeight = if (locked) fitHeight else hourHeight * range.hours
         val frame = TimelineFrame(range, gridHeight, allDayHeight)
@@ -194,6 +198,12 @@ fun XDaysPager(
         }
         Row(Modifier.fillMaxSize()) {
             HourColumn(frame, times, timeline.scroll, locked)
+            // separates the hour column from the days, from the top of the all-day bar down
+            VerticalDivider(
+                Modifier.padding(top = HeaderHeight),
+                thickness = DividerHeight,
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
             HorizontalPager(pager, Modifier.weight(1f).fillMaxHeight(), beyondViewportPageCount = 1, key = { it }) {
                 page(it, frame)
             }
@@ -205,6 +215,7 @@ fun XDaysPager(
 private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: ScrollState, locked: Boolean) {
     Column(Modifier.width(GutterWidth).fillMaxHeight()) {
         Spacer(Modifier.height(HeaderHeight))
+        HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
         Text(
             stringResource(R.string.all_day),
             Modifier.fillMaxWidth().layoutHeight(frame.allDayHeight).padding(top = 2.dp, end = 4.dp),
@@ -326,6 +337,7 @@ fun XDaysView(
 
     Column(modifier.fillMaxSize()) {
         DayHeader(dates)
+        HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
         AllDayBar(dates, split.allDay, page, timeline, frame, vm, actions)
         HorizontalDivider(thickness = DividerHeight, color = MaterialTheme.colorScheme.outlineVariant)
         TimedGrid(dates, split.timed, frame, timeline, settings, vm, actions, Modifier.weight(1f))
