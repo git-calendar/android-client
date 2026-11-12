@@ -610,6 +610,7 @@ private fun GridColumns(
     var drag by remember { mutableStateOf<TimedDrag?>(null) }
     val today = LocalDate.now()
     val nowTime = currentTime()
+    val times = rememberTimeFormatter(settings)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
@@ -760,7 +761,7 @@ private fun GridColumns(
             }
             placed.forEach { (event, rect) ->
                 if (event === hiddenEvent) return@forEach
-                TimedEventChip(event, rect, vm, textScale)
+                TimedEventChip(event, rect, vm, times, textScale)
             }
 
             // Current time line across the grid, with a dot in today's column; the time is in the hour column.
@@ -789,7 +790,7 @@ private fun GridColumns(
                 val top = gridMinutes(preview.from, d.day).toFloat() / math.totalMinutes * heightPx
                 val bottom = gridMinutes(preview.to, d.day).toFloat() / math.totalMinutes * heightPx
                 val rect = Rect(d.day * colPx + 1f, top, (d.day + 1) * colPx - 2f, bottom)
-                TimedEventChip(preview, rect, vm, textScale, preview = true)
+                TimedEventChip(preview, rect, vm, times, textScale, preview = true)
             }
         }
     }
@@ -800,6 +801,7 @@ private fun TimedEventChip(
     event: Event,
     rect: Rect,
     vm: CalendarViewModel,
+    times: TimeFormatter,
     textScale: Float,
     preview: Boolean = false,
 ) {
@@ -808,8 +810,7 @@ private fun TimedEventChip(
     val heightDp = with(density) { (rect.height - 2f).coerceAtLeast(1f).toDp() }
     EventChip(
         title = event.title.ifEmpty { stringResource(R.string.event_new) },
-        // the location rather than the time, which the chip's position already shows
-        subtitle = event.location.trim().ifEmpty { null },
+        subtitle = times.range(event.from, event.to),
         color = color,
         ghost = preview,
         compact = heightDp < 30.dp * textScale,
