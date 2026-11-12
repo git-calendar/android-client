@@ -134,11 +134,6 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
                 navigationIcon = {
                     IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.close)) }
                 },
-                actions = {
-                    if (!vm.readonly) {
-                        FormButton(stringResource(R.string.save), vm::save, Modifier.padding(end = 12.dp), enabled = enabled)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -195,9 +190,12 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            if (!vm.isNew && !vm.readonly) {
+            if (!vm.readonly) {
                 FormButtons {
-                    FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = enabled, danger = true)
+                    FormButton(stringResource(R.string.save), vm::save, enabled = enabled)
+                    if (!vm.isNew) {
+                        FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = enabled, danger = true)
+                    }
                 }
             }
             Spacer(Modifier.size(16.dp))
