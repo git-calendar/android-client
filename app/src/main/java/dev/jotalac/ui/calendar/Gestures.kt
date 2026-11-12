@@ -9,9 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -123,9 +120,9 @@ private val SideLine = 3.dp
 /**
  * An event block in the timeline, all-day bar or month grid, styled like the web client: square, the
  * event color at half strength with a solid line of it on the left (dashed and lighter for a [ghost]
- * drag preview). The title wraps over every full line that fits, without an ellipsis; the subtitle
- * is shown below it only when a line is left for it. [textScale] shrinks the text, like the
- * zoomed-out timeline does, so more of the title fits.
+ * drag preview). The title takes one line, cut at the edge, so it is as tall as the timeline layout
+ * expects; the subtitle is shown below it only when a second line fits. [textScale] shrinks the
+ * text, like the zoomed-out timeline does, so more of the title fits.
  */
 @Composable
 fun EventChip(
@@ -160,8 +157,7 @@ fun EventChip(
             .padding(start = SideLine + 3.dp, end = 3.dp, top = if (compact) 1.dp else 2.dp, bottom = if (compact) 1.dp else 2.dp),
     ) {
         val lineHeight = with(LocalDensity.current) { titleLineHeight.toDp() }
-        val lines = if (constraints.hasBoundedHeight) (maxHeight / lineHeight).toInt().coerceAtLeast(1) else Int.MAX_VALUE
-        var titleLines by remember { mutableIntStateOf(1) }
+        val twoLines = !constraints.hasBoundedHeight || maxHeight >= lineHeight * 2
         Column {
             Text(
                 title,
@@ -169,14 +165,12 @@ fun EventChip(
                 fontSize = 12.sp * textScale,
                 lineHeight = titleLineHeight,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = lines,
-                // a single line is cut at the edge rather than at a word, to show as much as possible
-                softWrap = lines > 1,
+                maxLines = 1,
+                softWrap = false,
                 overflow = TextOverflow.Clip,
                 style = MaterialTheme.typography.labelMedium,
-                onTextLayout = { titleLines = it.lineCount },
             )
-            if (subtitle != null && titleLines < lines) {
+            if (subtitle != null && !compact && twoLines) {
                 Text(
                     subtitle,
                     color = content.copy(alpha = 0.8f),

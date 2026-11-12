@@ -43,6 +43,7 @@ import dev.jotalac.data.Settings
 import dev.jotalac.data.withPendingEdits
 import dev.jotalac.layout.MonthLayout
 import dev.jotalac.ui.common.currentLocale
+import dev.jotalac.ui.common.rememberTimeFormatter
 import dev.jotalac.ui.common.shortName
 import dev.jotalac.ui.common.weekDays
 import dev.jotalac.ui.theme.GitRed
@@ -71,6 +72,7 @@ fun MonthView(
 ) {
     val zone = ZoneId.systemDefault()
     val locale = currentLocale()
+    val times = rememberTimeFormatter(settings)
     val gridStart = remember(month, settings.weekStart) { MonthLayout.gridStart(month, settings.weekStart) }
     val dates = remember(gridStart) { List(MonthLayout.WEEKS * 7) { gridStart.plusDays(it.toLong()) } }
     val rangeStart = gridStart.atStartOfDay(zone)
@@ -233,7 +235,7 @@ fun MonthView(
                     layout.chips.forEach { chip ->
                         EventChip(
                             title = chip.event.title,
-                            subtitle = chip.event.location.trim().ifEmpty { null },
+                            subtitle = times.range(chip.event.from, chip.event.to),
                             color = TagColor.of(vm.colorId(chip.event)).color,
                             compact = chip.compact,
                             modifier = Modifier
