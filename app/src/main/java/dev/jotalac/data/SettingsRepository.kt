@@ -31,7 +31,7 @@ data class Settings(
     val dayViewEndHour: Int = 0,
     val dragPrecisionMinutes: Int = 30,
     val themeMode: ThemeMode = ThemeMode.System,
-    val colorSource: ColorSource = ColorSource.Dynamic,
+    val colorSource: ColorSource = ColorSource.Git,
     val defaultEventColor: String = "gray",
     val defaultView: CalendarViewType = CalendarViewType.Week,
     /** Calendar name to color ID for events without a tag. */

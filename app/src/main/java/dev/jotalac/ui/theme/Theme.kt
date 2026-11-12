@@ -82,7 +82,7 @@ val SquareShapes = Shapes(
 @Composable
 fun GitCalendarTheme(
     themeMode: ThemeMode = ThemeMode.System,
-    colorSource: ColorSource = ColorSource.Dynamic,
+    colorSource: ColorSource = ColorSource.Git,
     content: @Composable () -> Unit,
 ) {
     val dark = when (themeMode) {
