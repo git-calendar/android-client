@@ -18,22 +18,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -42,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -58,9 +49,20 @@ import dev.jotalac.R
 import dev.jotalac.core.Calendar
 import dev.jotalac.data.RemoteUrl
 import dev.jotalac.ui.common.ConfirmDialog
+import dev.jotalac.ui.common.FieldAction
+import dev.jotalac.ui.common.FormButton
+import dev.jotalac.ui.common.FormButtons
+import dev.jotalac.ui.common.FormCheckbox
+import dev.jotalac.ui.common.FormGap
+import dev.jotalac.ui.common.FormHint
+import dev.jotalac.ui.common.FormSelect
+import dev.jotalac.ui.common.FormTextField
+import dev.jotalac.ui.common.FormToggle
 import dev.jotalac.ui.common.MessageDialog
+import dev.jotalac.ui.common.formTextStyle
+import dev.jotalac.ui.theme.TagColor
+import androidx.compose.material3.TopAppBarDefaults
 import dev.jotalac.ui.common.userMessage
-import dev.jotalac.ui.event.Dropdown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -247,30 +249,23 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                     IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.close)) }
                 },
                 actions = {
-                    if (!vm.isNew) {
-                        IconButton(onClick = { confirmDelete = true }, enabled = !vm.busy) {
-                            Icon(Icons.Outlined.Delete, stringResource(R.string.delete))
-                        }
-                    }
-                    Button(
-                        shape = MaterialTheme.shapes.small,
-                        onClick = { vm.submit(readFile) },
+                    FormButton(
+                        stringResource(
+                            when {
+                                !vm.isNew -> R.string.save
+                                vm.isICalFile -> R.string.import_btn
+                                else -> R.string.create
+                            }
+                        ),
+                        { vm.submit(readFile) },
+                        Modifier.padding(end = 12.dp),
                         enabled = !vm.busy && !(vm.isICalFile && vm.writableCalendars.isEmpty()),
-                        modifier = Modifier.padding(end = 8.dp),
-                    ) {
-                        Text(
-                            stringResource(
-                                when {
-                                    !vm.isNew -> R.string.save
-                                    vm.isICalFile -> R.string.import_btn
-                                    else -> R.string.create
-                                }
-                            )
-                        )
-                    }
+                    )
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             Modifier
@@ -278,31 +273,20 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                 .fillMaxSize()
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = FormGap, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(FormGap),
         ) {
             if (vm.isNew) {
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    CreateMode.entries.forEachIndexed { i, m ->
-                        SegmentedButton(
-                            selected = vm.mode == m,
-                            onClick = { vm.mode = m },
-                            shape = SegmentedButtonDefaults.itemShape(i, CreateMode.entries.size, MaterialTheme.shapes.small),
-                        ) { Text(stringResource(m.label)) }
-                    }
-                }
+                FormToggle(
+                    CreateMode.entries.map { stringResource(it.label) to it }, vm.mode, { vm.mode = it }, Modifier.fillMaxWidth(),
+                )
                 if (vm.mode == CreateMode.ICal) {
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        ICalSource.entries.forEachIndexed { i, s ->
-                            SegmentedButton(
-                                selected = vm.icalSource == s,
-                                onClick = { vm.icalSource = s },
-                                shape = SegmentedButtonDefaults.itemShape(i, ICalSource.entries.size, MaterialTheme.shapes.small),
-                            ) { Text(stringResource(s.label)) }
-                        }
-                    }
+                    FormToggle(
+                        ICalSource.entries.map { stringResource(it.label) to it }, vm.icalSource, { vm.icalSource = it },
+                        Modifier.fillMaxWidth(),
+                    )
                 }
-                Text(
+                FormHint(
                     stringResource(
                         when {
                             vm.isICalFile -> R.string.calendar_file_import_description
@@ -311,8 +295,6 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                             else -> R.string.calendar_init_description
                         }
                     ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -329,30 +311,45 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                     keyboard = KeyboardType.Uri,
                 )
                 if (!vm.isICalUrl) {
-                    Text(stringResource(R.string.calendar_git_credentials), style = MaterialTheme.typography.labelLarge)
-                    Field(vm.username, { vm.username = it }, stringResource(R.string.calendar_username))
-                    SecretField(vm.password, { vm.password = it }, stringResource(R.string.calendar_password))
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            "${stringResource(R.string.calendar_git_credentials)} (${stringResource(R.string.optional)})",
+                            style = formTextStyle(),
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(FormGap)) {
+                            Field(vm.username, { vm.username = it }, stringResource(R.string.calendar_username), Modifier.weight(1f))
+                            SecretField(vm.password, { vm.password = it }, stringResource(R.string.calendar_password), Modifier.weight(1f))
+                        }
+                    }
                     if ((vm.isNew && vm.mode == CreateMode.Clone) || (!vm.isNew && vm.url.isNotBlank())) {
-                        CheckRow(stringResource(R.string.calendar_readonly), vm.readonly) { vm.readonly = it }
+                        FormCheckbox(stringResource(R.string.calendar_readonly), vm.readonly, { vm.readonly = it })
                     }
                     if (vm.isNew) {
-                        CheckRow(stringResource(R.string.calendar_encrypted), vm.encrypted) { vm.encrypted = it }
-                        if (vm.encrypted) {
-                            SecretField(vm.encryptionKey, { vm.encryptionKey = it }, stringResource(R.string.calendar_encryption_key))
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            FormCheckbox(stringResource(R.string.calendar_encrypted), vm.encrypted, { vm.encrypted = it })
+                            if (vm.encrypted) {
+                                SecretField(vm.encryptionKey, { vm.encryptionKey = it }, stringResource(R.string.calendar_encryption_key))
+                            }
                         }
                     } else if (vm.existing?.encrypted == true) {
-                        Text(stringResource(R.string.calendar_is_encrypted), style = MaterialTheme.typography.bodyMedium)
+                        FormHint(stringResource(R.string.calendar_is_encrypted))
                     }
                 }
             }
-            Spacer(Modifier.size(24.dp))
+
+            if (!vm.isNew) {
+                FormButtons {
+                    FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = !vm.busy, danger = true)
+                }
+            }
+            Spacer(Modifier.size(16.dp))
         }
     }
 
     vm.error?.let { MessageDialog(stringResource(it), { vm.error = null }) }
     vm.failure?.let { MessageDialog(it.userMessage(context, vm.name), { vm.failure = null }) }
     if (confirmDelete) {
-        ConfirmDialog(stringResource(R.string.confirm_calendar_delete), stringResource(R.string.delete), vm::delete) {
+        ConfirmDialog(stringResource(R.string.confirm_calendar_delete), stringResource(R.string.delete), vm::delete, danger = true) {
             confirmDelete = false
         }
     }
@@ -361,70 +358,68 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
 @Composable
 private fun ICalFileFields(vm: CalendarEditorViewModel, pick: () -> Unit) {
     if (vm.writableCalendars.isEmpty()) {
-        Text(stringResource(R.string.no_writable_calendars), color = MaterialTheme.colorScheme.error)
+        FormHint(stringResource(R.string.no_writable_calendars), color = MaterialTheme.colorScheme.error)
         return
     }
-    OutlinedButton(shape = MaterialTheme.shapes.small, onClick = pick, modifier = Modifier.fillMaxWidth()) {
-        Icon(Icons.Outlined.FileOpen, null)
-        Spacer(Modifier.size(8.dp))
-        Text(vm.fileName.ifEmpty { stringResource(R.string.calendar_choose_file) })
-    }
-    Dropdown(
-        label = stringResource(R.string.calendar_destination),
-        selected = vm.destination,
-        options = vm.writableCalendars.map { it.name to it.name },
-        enabled = true,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        vm.destination = it
-        vm.destinationTag = ""
-    }
+    FormButton(
+        vm.fileName.ifEmpty { stringResource(R.string.calendar_choose_file) }, pick, Modifier.fillMaxWidth(),
+        icon = Icons.Outlined.FileOpen,
+    )
     val untagged = stringResource(R.string.tag_untagged)
     val tags = vm.tagsOf(vm.destination)
-    Dropdown(
-        label = stringResource(R.string.tag_name),
-        selected = tags.firstOrNull { it.id == vm.destinationTag }?.name ?: untagged,
-        options = listOf(untagged to "") + tags.map { it.name to it.id.orEmpty() },
-        enabled = true,
-        modifier = Modifier.fillMaxWidth(),
-    ) { vm.destinationTag = it }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("${stringResource(R.string.calendar_destination)}:", style = formTextStyle())
+        Row(horizontalArrangement = Arrangement.spacedBy(FormGap)) {
+            FormSelect(
+                vm.destination,
+                vm.writableCalendars.map { it.name to it.name },
+                {
+                    vm.destination = it
+                    vm.destinationTag = ""
+                },
+                Modifier.weight(1f),
+            )
+            val tag = tags.firstOrNull { it.id == vm.destinationTag }
+            FormSelect(
+                tag?.name ?: untagged,
+                listOf(untagged to "") + tags.map { it.name to it.id.orEmpty() },
+                { vm.destinationTag = it },
+                Modifier.weight(1f),
+                leading = tag?.let { TagColor.of(it.color).color },
+            )
+        }
+    }
 }
 
 @Composable
-private fun Field(value: String, onChange: (String) -> Unit, label: String, keyboard: KeyboardType = KeyboardType.Text) {
-    OutlinedTextField(
+private fun Field(
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    keyboard: KeyboardType = KeyboardType.Text,
+) {
+    FormTextField(
         value = value,
         onValueChange = onChange,
-        label = { Text(label) },
-        singleLine = true,
+        placeholder = placeholder,
         keyboardOptions = KeyboardOptions(keyboardType = keyboard, autoCorrectEnabled = false),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     )
 }
 
 @Composable
-private fun SecretField(value: String, onChange: (String) -> Unit, label: String) {
+private fun SecretField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier.fillMaxWidth()) {
     var visible by remember { mutableStateOf(false) }
-    OutlinedTextField(
+    FormTextField(
         value = value,
         onValueChange = onChange,
-        label = { Text(label) },
-        singleLine = true,
+        placeholder = placeholder,
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
-        trailingIcon = {
-            IconButton(onClick = { visible = !visible }) {
-                Icon(if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, null)
-            }
+        trailing = {
+            FieldAction(if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, null) { visible = !visible }
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     )
-}
-
-@Composable
-private fun CheckRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(checked = checked, onCheckedChange = onChange)
-        Text(label)
-    }
 }
