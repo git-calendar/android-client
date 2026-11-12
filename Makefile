@@ -1,4 +1,4 @@
-CORE_VERSION := v0.3.2
+CORE_VERSION := v0.4.0
 AAR := app/libs/core.aar
 
 .PHONY: fetch-core fetch-core-latest
