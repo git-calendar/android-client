@@ -23,9 +23,9 @@
     <string name="sync_status_idle">Synced</string>
     <string name="sync_status_syncing">Syncing…</string>
     <string name="create_calendar">Create calendar</string>
-    <string name="edit_calendar">Edit calendar %1$s</string>
-    <string name="create_tag">Create tag in calendar %1$s</string>
-    <string name="edit_tag">Edit tag %1$s</string>
+    <string name="edit_calendar">Edit calendar \"%1$s\"</string>
+    <string name="create_tag">Create tag in calendar \"%1$s\"</string>
+    <string name="edit_tag">Edit tag \"%1$s\"</string>
     <string name="show_tag">Show %1$s</string>
 
     <!-- Buttons -->

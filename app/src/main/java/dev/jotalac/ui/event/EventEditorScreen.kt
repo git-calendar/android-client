@@ -12,17 +12,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -31,14 +26,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -71,6 +62,7 @@ import dev.jotalac.ui.common.FormButtons
 import dev.jotalac.ui.common.FormCheckbox
 import dev.jotalac.ui.common.FormChip
 import dev.jotalac.ui.common.FormDialog
+import dev.jotalac.ui.common.FormDialogContent
 import dev.jotalac.ui.common.FormGap
 import dev.jotalac.ui.common.FormHint
 import dev.jotalac.ui.common.FormIconButton
@@ -100,7 +92,6 @@ private val DateLabelWidth = 44.dp
 /** Indent of the repeat end and reminder rows under their headings, like the web client on a phone. */
 private val SubRowIndent = 24.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () -> Unit) {
     val context = LocalContext.current
@@ -111,88 +102,64 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     val enabled = !vm.readonly && !vm.saving
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(
-                            when {
-                                vm.readonly -> R.string.event_view
-                                vm.isNew -> R.string.event_new
-                                else -> R.string.event_edit
-                            }
-                        )
-                    )
+    FormDialogContent(
+        stringResource(
+            when {
+                vm.readonly -> R.string.event_view
+                vm.isNew -> R.string.event_new
+                else -> R.string.event_edit
+            }
+        ),
+        wide = true,
+    ) {
+        if (vm.readonly) FormHint(stringResource(R.string.event_readonly))
+        FormTextField(
+            value = vm.title,
+            onValueChange = { vm.title = it; vm.error = null },
+            placeholder = stringResource(R.string.event_title),
+            enabled = enabled,
+            isError = vm.error == R.string.error_missing_title,
+            textStyle = formTextStyle().copy(fontSize = MaterialTheme.typography.titleMedium.fontSize),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            DateTimeRow(stringResource(R.string.event_from), vm.fromDate, vm.fromTime, vm.allDay, enabled, settings,
+                onDate = { d ->
+                    // Keep the duration when the start date moves, like most calendar apps.
+                    val shift = java.time.temporal.ChronoUnit.DAYS.between(vm.fromDate, d)
+                    vm.fromDate = d
+                    vm.toDate = vm.toDate.plusDays(shift)
                 },
-                navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(AppIcons.X, stringResource(R.string.close)) }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(
-            Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = FormGap, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(FormGap),
-        ) {
-            if (vm.readonly) FormHint(stringResource(R.string.event_readonly))
-            FormTextField(
-                value = vm.title,
-                onValueChange = { vm.title = it; vm.error = null },
-                placeholder = stringResource(R.string.event_title),
-                enabled = enabled,
-                isError = vm.error == R.string.error_missing_title,
-                textStyle = formTextStyle().copy(fontSize = MaterialTheme.typography.titleMedium.fontSize),
-                modifier = Modifier.fillMaxWidth(),
-            )
+                onTime = { vm.fromTime = it })
+            DateTimeRow(stringResource(R.string.event_to), vm.toDate, vm.toTime, vm.allDay, enabled, settings,
+                onDate = { vm.toDate = it }, onTime = { vm.toTime = it },
+                isError = vm.error == R.string.error_bad_to_date)
+        }
+        FormCheckbox(stringResource(R.string.event_entire_day), vm.allDay, { vm.allDay = it }, enabled = enabled)
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                DateTimeRow(stringResource(R.string.event_from), vm.fromDate, vm.fromTime, vm.allDay, enabled, settings,
-                    onDate = { d ->
-                        // Keep the duration when the start date moves, like most calendar apps.
-                        val shift = java.time.temporal.ChronoUnit.DAYS.between(vm.fromDate, d)
-                        vm.fromDate = d
-                        vm.toDate = vm.toDate.plusDays(shift)
-                    },
-                    onTime = { vm.fromTime = it })
-                DateTimeRow(stringResource(R.string.event_to), vm.toDate, vm.toTime, vm.allDay, enabled, settings,
-                    onDate = { vm.toDate = it }, onTime = { vm.toTime = it },
-                    isError = vm.error == R.string.error_bad_to_date)
-            }
-            FormCheckbox(stringResource(R.string.event_entire_day), vm.allDay, { vm.allDay = it }, enabled = enabled)
+        RepeatFields(vm, enabled) { customDialog = true }
+        ReminderFields(vm, enabled) {
+            if (vm.addReminder()) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        CalendarAndTag(vm, enabled)
+        LocationField(vm, enabled)
+        FormTextField(
+            value = vm.description,
+            onValueChange = { vm.description = it },
+            placeholder = stringResource(R.string.event_description),
+            singleLine = false,
+            minLines = 3,
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
-            RepeatFields(vm, enabled) { customDialog = true }
-            ReminderFields(vm, enabled) {
-                if (vm.addReminder()) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        FormButtons {
+            if (!vm.readonly) FormButton(stringResource(R.string.save), vm::save, enabled = enabled)
+            FormButton(stringResource(R.string.close), onClose)
+            if (!vm.readonly && !vm.isNew) {
+                FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = enabled, danger = true)
             }
-            CalendarAndTag(vm, enabled)
-            LocationField(vm, enabled)
-            FormTextField(
-                value = vm.description,
-                onValueChange = { vm.description = it },
-                placeholder = stringResource(R.string.event_description),
-                singleLine = false,
-                minLines = 3,
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            if (!vm.readonly) {
-                FormButtons {
-                    FormButton(stringResource(R.string.save), vm::save, enabled = enabled)
-                    if (!vm.isNew) {
-                        FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = enabled, danger = true)
-                    }
-                }
-            }
-            Spacer(Modifier.size(16.dp))
         }
     }
 

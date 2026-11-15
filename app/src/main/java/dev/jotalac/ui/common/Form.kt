@@ -22,10 +22,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -54,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 // Compact form controls styled like the web client's inputs (styles.css): flat and filled, no
 // borders or floating labels, square corners and one height for fields, selects and buttons.
@@ -362,16 +366,30 @@ fun FormHint(text: String, modifier: Modifier = Modifier, color: Color = Materia
 /** A modal form like the web client's: the background color with a faint border and square corners. */
 @Composable
 fun FormDialog(onDismiss: () -> Unit, title: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerHighest),
+    Dialog(onDismissRequest = onDismiss) { FormDialogContent(title, content = content) }
+}
+
+/** Window settings for a dialog that uses almost the whole width, set up by [FormDialogContent] with `wide`. */
+val WideDialogProperties = DialogProperties(usePlatformDefaultWidth = false)
+
+/**
+ * The inside of a [FormDialog], for a window already provided, like a navigation dialog destination.
+ * [wide] fills almost the whole width, for windows opened with [WideDialogProperties].
+ */
+@Composable
+fun FormDialogContent(title: String? = null, wide: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = if (wide) Modifier.widthIn(max = 600.dp).fillMaxWidth().padding(12.dp) else Modifier,
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.background,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerHighest),
+    ) {
+        Column(
+            Modifier.verticalScroll(rememberScrollState()).padding(FormGap),
+            verticalArrangement = Arrangement.spacedBy(FormGap),
         ) {
-            Column(Modifier.padding(FormGap), verticalArrangement = Arrangement.spacedBy(FormGap)) {
-                title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
-                content()
-            }
+            title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
+            content()
         }
     }
 }

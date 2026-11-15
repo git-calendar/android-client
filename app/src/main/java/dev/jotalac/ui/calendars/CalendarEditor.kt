@@ -8,22 +8,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +38,7 @@ import dev.jotalac.ui.common.FieldAction
 import dev.jotalac.ui.common.FormButton
 import dev.jotalac.ui.common.FormButtons
 import dev.jotalac.ui.common.FormCheckbox
+import dev.jotalac.ui.common.FormDialogContent
 import dev.jotalac.ui.common.FormGap
 import dev.jotalac.ui.common.FormHint
 import dev.jotalac.ui.common.FormSelect
@@ -57,7 +47,6 @@ import dev.jotalac.ui.common.FormToggle
 import dev.jotalac.ui.common.MessageDialog
 import dev.jotalac.ui.common.formTextStyle
 import dev.jotalac.ui.theme.TagColor
-import androidx.compose.material3.TopAppBarDefaults
 import dev.jotalac.ui.common.userMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -212,7 +201,6 @@ class CalendarEditorViewModel(private val container: AppContainer, editName: Str
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
     val context = LocalContext.current
@@ -232,110 +220,88 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (vm.isNew) stringResource(R.string.create_calendar)
-                        else stringResource(R.string.edit_calendar, vm.existing?.name.orEmpty())
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(AppIcons.X, stringResource(R.string.close)) }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+    FormDialogContent(
+        if (vm.isNew) stringResource(R.string.create_calendar)
+        else stringResource(R.string.edit_calendar, vm.existing?.name.orEmpty()),
+        wide = true,
+    ) {
+        if (vm.isNew) {
+            FormToggle(
+                CreateMode.entries.map { stringResource(it.label) to it }, vm.mode, { vm.mode = it }, Modifier.fillMaxWidth(),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(
-            Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = FormGap, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(FormGap),
-        ) {
-            if (vm.isNew) {
+            if (vm.mode == CreateMode.ICal) {
                 FormToggle(
-                    CreateMode.entries.map { stringResource(it.label) to it }, vm.mode, { vm.mode = it }, Modifier.fillMaxWidth(),
+                    ICalSource.entries.map { stringResource(it.label) to it }, vm.icalSource, { vm.icalSource = it },
+                    Modifier.fillMaxWidth(),
                 )
-                if (vm.mode == CreateMode.ICal) {
-                    FormToggle(
-                        ICalSource.entries.map { stringResource(it.label) to it }, vm.icalSource, { vm.icalSource = it },
-                        Modifier.fillMaxWidth(),
+            }
+            FormHint(
+                stringResource(
+                    when {
+                        vm.isICalFile -> R.string.calendar_file_import_description
+                        vm.mode == CreateMode.ICal -> R.string.calendar_url_import_description
+                        vm.mode == CreateMode.Clone -> R.string.calendar_clone_description
+                        else -> R.string.calendar_init_description
+                    }
+                ),
+            )
+        }
+
+        if (vm.isICalFile) {
+            ICalFileFields(vm) { pickFile.launch(arrayOf("text/calendar", "application/octet-stream", "*/*")) }
+        } else {
+            if (!(vm.isNew && vm.mode == CreateMode.Clone)) {
+                Field(vm.name, { vm.name = it }, stringResource(R.string.calendar_name))
+            }
+            val urlLabel = if (vm.isICalUrl) R.string.calendar_ical else R.string.calendar_git_repository
+            Field(
+                vm.url, { vm.url = it },
+                stringResource(urlLabel) + if (vm.isNew && vm.mode == CreateMode.Init) " (${stringResource(R.string.optional)})" else "",
+                keyboard = KeyboardType.Uri,
+            )
+            if (!vm.isICalUrl) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "${stringResource(R.string.calendar_git_credentials)} (${stringResource(R.string.optional)})",
+                        style = formTextStyle(),
                     )
+                    Row(horizontalArrangement = Arrangement.spacedBy(FormGap)) {
+                        Field(vm.username, { vm.username = it }, stringResource(R.string.calendar_username), Modifier.weight(1f))
+                        SecretField(vm.password, { vm.password = it }, stringResource(R.string.calendar_password), Modifier.weight(1f))
+                    }
                 }
-                FormHint(
-                    stringResource(
-                        when {
-                            vm.isICalFile -> R.string.calendar_file_import_description
-                            vm.mode == CreateMode.ICal -> R.string.calendar_url_import_description
-                            vm.mode == CreateMode.Clone -> R.string.calendar_clone_description
-                            else -> R.string.calendar_init_description
-                        }
-                    ),
-                )
-            }
-
-            if (vm.isICalFile) {
-                ICalFileFields(vm) { pickFile.launch(arrayOf("text/calendar", "application/octet-stream", "*/*")) }
-            } else {
-                if (!(vm.isNew && vm.mode == CreateMode.Clone)) {
-                    Field(vm.name, { vm.name = it }, stringResource(R.string.calendar_name))
+                if ((vm.isNew && vm.mode == CreateMode.Clone) || (!vm.isNew && vm.url.isNotBlank())) {
+                    FormCheckbox(stringResource(R.string.calendar_readonly), vm.readonly, { vm.readonly = it })
                 }
-                val urlLabel = if (vm.isICalUrl) R.string.calendar_ical else R.string.calendar_git_repository
-                Field(
-                    vm.url, { vm.url = it },
-                    stringResource(urlLabel) + if (vm.isNew && vm.mode == CreateMode.Init) " (${stringResource(R.string.optional)})" else "",
-                    keyboard = KeyboardType.Uri,
-                )
-                if (!vm.isICalUrl) {
+                if (vm.isNew) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            "${stringResource(R.string.calendar_git_credentials)} (${stringResource(R.string.optional)})",
-                            style = formTextStyle(),
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(FormGap)) {
-                            Field(vm.username, { vm.username = it }, stringResource(R.string.calendar_username), Modifier.weight(1f))
-                            SecretField(vm.password, { vm.password = it }, stringResource(R.string.calendar_password), Modifier.weight(1f))
+                        FormCheckbox(stringResource(R.string.calendar_encrypted), vm.encrypted, { vm.encrypted = it })
+                        if (vm.encrypted) {
+                            SecretField(vm.encryptionKey, { vm.encryptionKey = it }, stringResource(R.string.calendar_encryption_key))
                         }
                     }
-                    if ((vm.isNew && vm.mode == CreateMode.Clone) || (!vm.isNew && vm.url.isNotBlank())) {
-                        FormCheckbox(stringResource(R.string.calendar_readonly), vm.readonly, { vm.readonly = it })
-                    }
-                    if (vm.isNew) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            FormCheckbox(stringResource(R.string.calendar_encrypted), vm.encrypted, { vm.encrypted = it })
-                            if (vm.encrypted) {
-                                SecretField(vm.encryptionKey, { vm.encryptionKey = it }, stringResource(R.string.calendar_encryption_key))
-                            }
-                        }
-                    } else if (vm.existing?.encrypted == true) {
-                        FormHint(stringResource(R.string.calendar_is_encrypted))
-                    }
+                } else if (vm.existing?.encrypted == true) {
+                    FormHint(stringResource(R.string.calendar_is_encrypted))
                 }
             }
+        }
 
-            FormButtons {
-                FormButton(
-                    stringResource(
-                        when {
-                            !vm.isNew -> R.string.save
-                            vm.isICalFile -> R.string.import_btn
-                            else -> R.string.create
-                        }
-                    ),
-                    { vm.submit(readFile) },
-                    enabled = !vm.busy && !(vm.isICalFile && vm.writableCalendars.isEmpty()),
-                )
-                if (!vm.isNew) {
-                    FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = !vm.busy, danger = true)
-                }
+        FormButtons {
+            FormButton(
+                stringResource(
+                    when {
+                        !vm.isNew -> R.string.save
+                        vm.isICalFile -> R.string.import_btn
+                        else -> R.string.create
+                    }
+                ),
+                { vm.submit(readFile) },
+                enabled = !vm.busy && !(vm.isICalFile && vm.writableCalendars.isEmpty()),
+            )
+            FormButton(stringResource(R.string.close), onClose)
+            if (!vm.isNew) {
+                FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = !vm.busy, danger = true)
             }
-            Spacer(Modifier.size(16.dp))
         }
     }
 

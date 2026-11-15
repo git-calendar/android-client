@@ -20,9 +20,9 @@
     <string name="sync_status_idle">Synchronizováno</string>
     <string name="sync_status_syncing">Synchronizace…</string>
     <string name="create_calendar">Vytvořit kalendář</string>
-    <string name="edit_calendar">Upravit kalendář %1$s</string>
-    <string name="create_tag">Vytvořit štítek v kalendáři %1$s</string>
-    <string name="edit_tag">Upravit štítek %1$s</string>
+    <string name="edit_calendar">Upravit kalendář „%1$s“</string>
+    <string name="create_tag">Vytvořit štítek v kalendáři „%1$s“</string>
+    <string name="edit_tag">Upravit štítek „%1$s“</string>
     <string name="show_tag">Zobrazit %1$s</string>
 
     <string name="save">Uložit</string>

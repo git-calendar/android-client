@@ -8,6 +8,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.jotalac.AppContainer
@@ -17,6 +18,7 @@ import dev.jotalac.ui.calendar.CalendarScreen
 import dev.jotalac.ui.calendar.CalendarViewModel
 import dev.jotalac.ui.calendar.newEventDraft
 import dev.jotalac.ui.calendars.CalendarEditorScreen
+import dev.jotalac.ui.common.WideDialogProperties
 import dev.jotalac.ui.calendars.CalendarEditorViewModel
 import dev.jotalac.ui.event.EventEditorScreen
 import dev.jotalac.ui.event.EventEditorViewModel
@@ -62,12 +64,13 @@ fun AppNavigation(container: AppContainer) {
                 ),
             )
         }
-        composable<EventEditorRoute> {
+        // the editors float over the calendar like the tag dialog
+        dialog<EventEditorRoute>(dialogProperties = WideDialogProperties) {
             val vm = viewModel { EventEditorViewModel(container) }
             val settings by container.settings.settings.collectAsStateWithLifecycle()
             EventEditorScreen(vm, settings, back)
         }
-        composable<CalendarEditorRoute> { entry ->
+        dialog<CalendarEditorRoute>(dialogProperties = WideDialogProperties) { entry ->
             val route = entry.toRoute<CalendarEditorRoute>()
             val vm = viewModel { CalendarEditorViewModel(container, route.name) }
             CalendarEditorScreen(vm, back)
