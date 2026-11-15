@@ -99,7 +99,8 @@ fun String.capitalized(locale: Locale): String = replaceFirstChar { if (it.isLow
 
 fun DayOfWeek.shortName(locale: Locale): String = getDisplayName(TextStyle.SHORT, locale).capitalized(locale)
 fun DayOfWeek.longName(locale: Locale): String = getDisplayName(TextStyle.FULL_STANDALONE, locale).capitalized(locale)
-fun DayOfWeek.narrowName(locale: Locale): String = getDisplayName(TextStyle.NARROW_STANDALONE, locale).capitalized(locale)
+/** The first two letters of the short name, "Su" for Sunday; narrow names repeat letters ("S" for both weekend days). */
+fun DayOfWeek.twoLetterName(locale: Locale): String = shortName(locale).take(2)
 
 fun YearMonth.title(locale: Locale): String =
     DateTimeFormatter.ofPattern("LLLL yyyy", locale).format(this).capitalized(locale)

@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.unit.Density
 import kotlin.math.abs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -55,6 +56,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,7 +83,8 @@ import dev.jotalac.layout.TimelineLayout
 import dev.jotalac.layout.TimelineSplit
 import dev.jotalac.ui.common.TimeFormatter
 import dev.jotalac.ui.common.currentLocale
-import dev.jotalac.ui.common.narrowName
+import dev.jotalac.ui.common.longName
+import dev.jotalac.ui.common.twoLetterName
 import dev.jotalac.ui.common.rememberTimeFormatter
 import dev.jotalac.ui.common.shortName
 import dev.jotalac.ui.theme.GitRed
@@ -137,6 +141,9 @@ class TimelineState internal constructor(
 
     /** Wanted all-day bar height reported by each composed page. */
     internal val allDayHeights = mutableStateMapOf<Int, Dp>()
+
+    /** Left edge of today's column, as a fraction of the page width, for each composed page that shows today. */
+    internal val todayFractions = mutableStateMapOf<Int, Float>()
 
     /** Configured hours of each composed page, grown to fit its timed events; used when scrolling is locked. */
     internal val ranges = mutableStateMapOf<Int, HourRange>()
@@ -212,6 +219,38 @@ fun XDaysPager(
                 page(it, frame)
             }
         }
+        NowSquare(frame, timeline, pager)
+    }
+}
+
+/**
+ * The square on the now line at today's left edge. It is drawn over the pager and the hour column,
+ * so in the first column it is not clipped by the pager but covers the time axis.
+ */
+@Composable
+private fun NowSquare(frame: TimelineFrame, timeline: TimelineState, pager: PagerState) {
+    val minutes = minutesIntoGrid(currentTime(), frame.range) ?: return
+    val primary = MaterialTheme.colorScheme.primary
+    val background = MaterialTheme.colorScheme.background
+    Canvas(Modifier.fillMaxSize()) {
+        val square = nowSquarePx()
+        val outline = 2f
+        val pagerLeft = (GutterWidth + DividerHeight).toPx()
+        val pageWidth = size.width - pagerLeft
+        // from the rounded sizes the layout gives each piece, so the square sits exactly on the grid's line
+        val gridTop = HeaderHeight.roundToPx() + frame.allDayHeight().roundToPx() + DividerHeight.roundToPx() * 2f
+        val y = gridTop + frame.gridHeight.roundToPx() * (minutes.toFloat() / (frame.range.hours * 60)) - timeline.scroll.value
+        // only over the grid, and over the hour column by no more than half the square
+        clipRect(left = pagerLeft - square / 2 - outline, top = gridTop) {
+            timeline.todayFractions.forEach { (page, fraction) ->
+                // nudged 2 px right of today's left edge
+                val x = pagerLeft + (page - pager.currentPage - pager.currentPageOffsetFraction + fraction) * pageWidth + 5f
+                // the background-colored outline cuts into the line a little on the right
+                drawRect(background, Offset(x - square / 2 - outline, y - square / 2 - outline),
+                    Size(square + outline * 2, square + outline * 2))
+                drawRect(primary, Offset(x - square / 2, y - square / 2), Size(square, square))
+            }
+        }
     }
 }
 
@@ -237,6 +276,15 @@ private fun HourColumn(frame: TimelineFrame, times: TimeFormatter, scroll: Scrol
             NowLabel(frame, times)
         }
     }
+}
+
+/** The now square's size in whole pixels. */
+private fun Density.nowSquarePx(): Float = 8.dp.toPx().roundToInt().toFloat()
+
+/** The now line's thickness in whole pixels, with the square's parity so the square is centered on it. */
+private fun Density.nowLinePx(): Float {
+    val line = 2.5.dp.toPx().roundToInt()
+    return (if ((nowSquarePx().toInt() - line) % 2 == 0) line else line + 1).toFloat()
 }
 
 /** The current time, updated when the minute changes. */
@@ -265,15 +313,18 @@ private fun BoxScope.NowLabel(frame: TimelineFrame, times: TimeFormatter) {
         Modifier
             .align(Alignment.TopEnd)
             .offset(y = y - NowLabelHeight / 2)
+            .offset { IntOffset(-3, -2) }
             .padding(end = 2.dp)
             .height(NowLabelHeight)
             .clip(RoundedCornerShape(7.dp))
             .background(MaterialTheme.colorScheme.primary)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 3.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             times.shortTime(now),
+            // the font's digits sit low even with the trimmed line; lift them to the label's visual center
+            Modifier.offset { IntOffset(0, -1) },
             fontSize = 11.sp,
             lineHeight = 11.sp,
             fontWeight = FontWeight.Medium,
@@ -336,10 +387,15 @@ fun XDaysView(
     val dates = remember(start, days) { List(days) { start.plusDays(it.toLong()) } }
 
     LaunchedEffect(timeline, page, split.range) { timeline.ranges[page] = split.range }
+    val todayIndex = dates.indexOf(LocalDate.now())
+    LaunchedEffect(timeline, page, todayIndex) {
+        if (todayIndex >= 0) timeline.todayFractions[page] = todayIndex / days.toFloat() else timeline.todayFractions.remove(page)
+    }
     DisposableEffect(timeline, page) {
         onDispose {
             timeline.allDayHeights.remove(page)
             timeline.ranges.remove(page)
+            timeline.todayFractions.remove(page)
         }
     }
 
@@ -352,7 +408,7 @@ fun XDaysView(
     }
 }
 
-/** One line of dates like the web client: "12. Thu", or "12. T" on a phone; today in the primary color. */
+/** One line of dates like the web client: "12. Thu", "12. Th" on a phone, "12. Thursday" in the day view; today in the primary color. */
 @Composable
 private fun DayHeader(dates: List<LocalDate>) {
     val locale = currentLocale()
@@ -360,7 +416,11 @@ private fun DayHeader(dates: List<LocalDate>) {
     val narrow = LocalConfiguration.current.screenWidthDp < 500
     Row(Modifier.fillMaxWidth().height(HeaderHeight), verticalAlignment = Alignment.CenterVertically) {
         dates.forEach { date ->
-            val day = if (narrow) date.dayOfWeek.narrowName(locale) else date.dayOfWeek.shortName(locale)
+            val day = when {
+                dates.size == 1 -> date.dayOfWeek.longName(locale)
+                narrow -> date.dayOfWeek.twoLetterName(locale)
+                else -> date.dayOfWeek.shortName(locale)
+            }
             Text(
                 "${date.dayOfMonth}. $day",
                 Modifier.weight(1f).padding(horizontal = 4.dp),
@@ -789,17 +849,12 @@ private fun GridColumns(
                     drawLine(primary.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
                     if (todayIndex < 0) return@Canvas
                     val left = todayIndex * colPx
-                    val line = 2.dp.toPx()
-                    // centered on today's left edge; in the first column the pager clips its left half
-                    val square = 10.dp.toPx()
-                    val outline = 1f
-                    // a background-colored outline under both, so the line and square stand out as one shape
+                    val line = nowLinePx()
+                    val outline = 2f
+                    // a background-colored outline so the line stands out; its square is drawn by NowSquare
                     drawRect(background, Offset(left - outline, y - line / 2 - outline),
                         androidx.compose.ui.geometry.Size(colPx + outline * 2, line + outline * 2))
-                    drawRect(background, Offset(left - square / 2 - outline, y - square / 2 - outline),
-                        androidx.compose.ui.geometry.Size(square + outline * 2, square + outline * 2))
                     drawRect(primary, Offset(left, y - line / 2), androidx.compose.ui.geometry.Size(colPx, line))
-                    drawRect(primary, Offset(left - square / 2, y - square / 2), androidx.compose.ui.geometry.Size(square, square))
                 }
             }
 
