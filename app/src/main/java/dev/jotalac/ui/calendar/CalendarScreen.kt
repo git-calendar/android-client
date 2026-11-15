@@ -241,7 +241,7 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
 
         if (wide) {
             Row(Modifier.fillMaxSize()) {
-                PermanentDrawerSheet(Modifier.width(300.dp)) { drawer() }
+                PermanentDrawerSheet(Modifier.width(280.dp)) { drawer() }
                 Box(Modifier.weight(1f)) { content() }
             }
         } else {
@@ -250,7 +250,7 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                 drawerState = drawerState,
                 // Edge swipes would fight the calendar's own horizontal paging.
                 gesturesEnabled = drawerState.isOpen,
-                drawerContent = { ModalDrawerSheet { drawer() } },
+                drawerContent = { ModalDrawerSheet(Modifier.width(280.dp)) { drawer() } },
             ) { content() }
         }
     }

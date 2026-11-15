@@ -67,7 +67,11 @@ fun DrawerContent(
 ) {
     var pickingDate by remember { mutableStateOf(false) }
     Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
             // the launcher foreground's logo takes only its middle 36%, the rest is padding for the icon mask
             Box(Modifier.size(24.dp)) {
                 Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(24.dp / 0.36f))
@@ -79,6 +83,7 @@ fun DrawerContent(
             )
         }
         NavigationDrawerItem(
+            modifier = Modifier.height(44.dp),
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.go_to_date)) },
             icon = { Icon(AppIcons.Calendar, null) },
@@ -97,12 +102,13 @@ fun DrawerContent(
             )
             ListAction(AppIcons.Plus, stringResource(R.string.create_calendar), 20.dp, actions.createCalendar)
         }
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             calendars.forEach { CalendarItem(it, settings, hidden, actions) }
         }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         NavigationDrawerItem(
+            modifier = Modifier.height(44.dp),
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.settings)) },
             icon = { Icon(AppIcons.Settings, null) },
@@ -110,6 +116,7 @@ fun DrawerContent(
             onClick = actions.settings,
         )
         NavigationDrawerItem(
+            modifier = Modifier.height(44.dp),
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.guide)) },
             icon = { Icon(AppIcons.HelpCircle, null) },
@@ -117,6 +124,7 @@ fun DrawerContent(
             onClick = actions.guide,
         )
         NavigationDrawerItem(
+            modifier = Modifier.height(44.dp),
             shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.source_code)) },
             icon = { Icon(AppIcons.Github, null) },
@@ -129,9 +137,9 @@ fun DrawerContent(
 
 @Composable
 private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenTags, actions: DrawerActions) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
-            Modifier.fillMaxWidth().height(32.dp).padding(start = 6.dp, end = 2.dp),
+            Modifier.fillMaxWidth().height(36.dp).padding(start = 6.dp, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
@@ -167,7 +175,7 @@ private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenT
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(28.dp)
+                    .height(32.dp)
                     .clip(MaterialTheme.shapes.small)
                     .toggleable(visible, role = Role.Checkbox) { actions.toggleTag(calendar.name, tag.id, !it) }
                     .padding(start = 6.dp, end = 2.dp),
