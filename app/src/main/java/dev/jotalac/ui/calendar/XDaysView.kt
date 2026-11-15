@@ -487,7 +487,7 @@ private fun AllDayBar(
                         .offset(x = colWidth * todayIndex)
                         .width(colWidth)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                 )
             }
             val moving = (drag as? DayDrag.Move)?.event
@@ -759,7 +759,7 @@ private fun GridColumns(
             val primary = MaterialTheme.colorScheme.primary
             Canvas(Modifier.fillMaxSize()) {
                 if (todayIndex >= 0) {
-                    drawRect(primary.copy(alpha = 0.05f), Offset(todayIndex * colPx, 0f),
+                    drawRect(primary.copy(alpha = 0.15f), Offset(todayIndex * colPx, 0f),
                         androidx.compose.ui.geometry.Size(colPx, size.height))
                 }
                 val hourPx = size.height / range.hours
