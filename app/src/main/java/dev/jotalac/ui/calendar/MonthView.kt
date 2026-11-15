@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.jotalac.R
@@ -41,6 +43,7 @@ import dev.jotalac.data.Settings
 import dev.jotalac.data.withPendingEdits
 import dev.jotalac.layout.MonthLayout
 import dev.jotalac.ui.common.currentLocale
+import dev.jotalac.ui.common.rememberTimeFormatter
 import dev.jotalac.ui.common.shortName
 import dev.jotalac.ui.common.weekDays
 import dev.jotalac.ui.theme.GitRed
@@ -69,6 +72,7 @@ fun MonthView(
 ) {
     val zone = ZoneId.systemDefault()
     val locale = currentLocale()
+    val times = rememberTimeFormatter(settings)
     val gridStart = remember(month, settings.weekStart) { MonthLayout.gridStart(month, settings.weekStart) }
     val dates = remember(gridStart) { List(MonthLayout.WEEKS * 7) { gridStart.plusDays(it.toLong()) } }
     val rangeStart = gridStart.atStartOfDay(zone)
@@ -182,20 +186,20 @@ fun MonthView(
                     val col = index % 7
                     val inMonth = date.month == month.month
                     val selected = drag is DayDrag.Create && preview != null && index in preview.second
+                    val isToday = date == today
                     Box(
                         Modifier
                             .offset(x = colWidth * col, y = rowHeight * week)
                             .size(colWidth, rowHeight)
                             .background(
                                 when {
-                                    selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                                     !inMonth -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)
                                     else -> Color.Transparent
                                 }
                             )
                             .border(0.5.dp, gridColor),
                     ) {
-                        val isToday = date == today
                         Box(
                             Modifier.padding(top = 2.dp).align(Alignment.TopCenter).size(20.dp).clip(MaterialTheme.shapes.small)
                                 .background(if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent),
@@ -204,6 +208,9 @@ fun MonthView(
                             Text(
                                 date.dayOfMonth.toString(),
                                 fontSize = 11.sp,
+                                // the inherited 24 sp line would push the number below the square's center
+                                lineHeight = 11.sp,
+                                style = LocalTextStyle.current.copy(lineHeightStyle = CenteredLine),
                                 color = when {
                                     isToday -> MaterialTheme.colorScheme.onPrimary
                                     inMonth -> MaterialTheme.colorScheme.onSurface
@@ -228,7 +235,7 @@ fun MonthView(
                     layout.chips.forEach { chip ->
                         EventChip(
                             title = chip.event.title,
-                            subtitle = chip.event.location.trim().ifEmpty { null },
+                            subtitle = times.range(chip.event.from, chip.event.to),
                             color = TagColor.of(vm.colorId(chip.event)).color,
                             compact = chip.compact,
                             modifier = Modifier
@@ -264,3 +271,5 @@ fun MonthView(
         }
     }
 }
+
+private val CenteredLine = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)

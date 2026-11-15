@@ -22,6 +22,9 @@ enum class TimeFormat { System, H12, H24 }
 enum class ThemeMode { System, Light, Dark }
 enum class ColorSource { Dynamic, Git }
 
+/** Look of the home-screen widget: the app's colors, or Nothing OS's near-black widgets tinted by the wallpaper. */
+enum class WidgetTheme { App, Nothing }
+
 /** User preferences, mirroring web-client/src/services/settings.ts. */
 data class Settings(
     val timeFormat: TimeFormat = TimeFormat.System,
@@ -30,8 +33,11 @@ data class Settings(
     /** 0 means midnight (24); a value not after [dayViewStartHour] runs past midnight. */
     val dayViewEndHour: Int = 0,
     val dragPrecisionMinutes: Int = 30,
+    /** Fits the configured hours to the screen without scrolling, zooming out for events outside them. */
+    val lockScroll: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.System,
-    val colorSource: ColorSource = ColorSource.Dynamic,
+    val colorSource: ColorSource = ColorSource.Git,
+    val widgetTheme: WidgetTheme = WidgetTheme.App,
     val defaultEventColor: String = "gray",
     val defaultView: CalendarViewType = CalendarViewType.Week,
     /** Calendar name to color ID for events without a tag. */
@@ -55,8 +61,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val dayStart = intPreferencesKey("day_view_start_hour")
         val dayEnd = intPreferencesKey("day_view_end_hour")
         val dragPrecision = intPreferencesKey("drag_precision_minutes")
+        val lockScroll = booleanPreferencesKey("lock_scroll")
         val themeMode = stringPreferencesKey("theme_mode")
         val colorSource = stringPreferencesKey("color_source")
+        val widgetTheme = stringPreferencesKey("widget_theme")
         val defaultEventColor = stringPreferencesKey("default_event_color")
         val defaultView = stringPreferencesKey("default_view")
         val untaggedColors = stringPreferencesKey("untagged_colors")
@@ -82,8 +90,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             dayViewStartHour = p[Keys.dayStart] ?: defaults.dayViewStartHour,
             dayViewEndHour = p[Keys.dayEnd] ?: defaults.dayViewEndHour,
             dragPrecisionMinutes = p[Keys.dragPrecision] ?: defaults.dragPrecisionMinutes,
+            lockScroll = p[Keys.lockScroll] ?: defaults.lockScroll,
             themeMode = enumOr(p[Keys.themeMode], defaults.themeMode),
             colorSource = enumOr(p[Keys.colorSource], defaults.colorSource),
+            widgetTheme = enumOr(p[Keys.widgetTheme], defaults.widgetTheme),
             defaultEventColor = p[Keys.defaultEventColor] ?: defaults.defaultEventColor,
             defaultView = enumOr(p[Keys.defaultView], defaults.defaultView),
             untaggedColors = p[Keys.untaggedColors]
@@ -101,8 +111,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[Keys.dayStart] = s.dayViewStartHour
             p[Keys.dayEnd] = s.dayViewEndHour
             p[Keys.dragPrecision] = s.dragPrecisionMinutes
+            p[Keys.lockScroll] = s.lockScroll
             p[Keys.themeMode] = s.themeMode.name
             p[Keys.colorSource] = s.colorSource.name
+            p[Keys.widgetTheme] = s.widgetTheme.name
             p[Keys.defaultEventColor] = s.defaultEventColor
             p[Keys.defaultView] = s.defaultView.name
             p[Keys.untaggedColors] = Json.encodeToString(s.untaggedColors)

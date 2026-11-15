@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.jotalac.ui.AppNavigation
 import dev.jotalac.ui.theme.GitCalendarTheme
+import java.time.Instant
 import java.time.LocalDate
 
 // AppCompatActivity so in-app language changes also apply on Android 12.
@@ -44,16 +45,25 @@ class MainActivity : AppCompatActivity() {
         handleIntent(intent)
     }
 
-    /** Opens the day of a tapped reminder notification or widget entry, or a new event from the widget. */
+    /** Opens the day of a tapped reminder notification or widget entry, the widget's tapped event, or a new event from the widget. */
     private fun handleIntent(intent: Intent?) {
         intent?.getStringExtra(EXTRA_OPEN_DATE)
             ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
             ?.let { container.openDate.value = it }
         if (intent?.getBooleanExtra(EXTRA_NEW_EVENT, false) == true) container.newEventRequested.value = true
+        val eventId = intent?.getStringExtra(EXTRA_OPEN_EVENT)
+        val eventFrom = intent?.getLongExtra(EXTRA_OPEN_EVENT_FROM, Long.MIN_VALUE) ?: Long.MIN_VALUE
+        if (eventId != null && eventFrom != Long.MIN_VALUE) {
+            container.openEvent.value = EventRef(eventId, Instant.ofEpochMilli(eventFrom))
+        }
     }
 
     companion object {
         const val EXTRA_OPEN_DATE = "open_date"
         const val EXTRA_NEW_EVENT = "new_event"
+        const val EXTRA_OPEN_EVENT = "open_event"
+
+        /** Start of the tapped occurrence in epoch milliseconds. */
+        const val EXTRA_OPEN_EVENT_FROM = "open_event_from"
     }
 }

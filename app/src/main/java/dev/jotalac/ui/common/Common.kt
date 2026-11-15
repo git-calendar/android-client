@@ -2,9 +2,7 @@ package dev.jotalac.ui.common
 
 import android.content.Context
 import android.text.format.DateFormat
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
@@ -32,12 +30,10 @@ fun Throwable.userMessage(context: Context, calendarName: String? = null): Strin
 
 @Composable
 fun MessageDialog(message: String, onDismiss: () -> Unit, title: String? = null) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = title?.let { { Text(it) } },
-        text = { Text(message) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
-    )
+    FormDialog(onDismiss, title) {
+        Text(message, style = formTextStyle())
+        FormButtons { FormButton(stringResource(R.string.ok), onDismiss) }
+    }
 }
 
 @Composable
@@ -45,23 +41,29 @@ fun ConfirmDialog(
     message: String,
     confirmLabel: String,
     onConfirm: () -> Unit,
+    danger: Boolean = false,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = { onDismiss(); onConfirm() }) { Text(confirmLabel) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
+    FormDialog(onDismiss) {
+        Text(message, style = formTextStyle())
+        FormButtons {
+            FormButton(confirmLabel, { onDismiss(); onConfirm() }, danger = danger)
+            FormButton(stringResource(R.string.cancel), onDismiss)
+        }
+    }
 }
 
 // ------------------------------------------ formatting -----------------------------------------
 
 @Composable
 @ReadOnlyComposable
-fun currentLocale(): Locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+fun currentLocale(): Locale = formattingLocale(LocalConfiguration.current.locales[0] ?: Locale.getDefault())
+
+/**
+ * The made-up Git language (qgt) has no date data in Java, so months come out as "M01"; it formats
+ * dates like English instead.
+ */
+fun formattingLocale(locale: Locale): Locale = if (locale.language == "qgt") Locale.ENGLISH else locale
 
 fun use24Hour(context: Context, settings: Settings): Boolean = when (settings.timeFormat) {
     TimeFormat.System -> DateFormat.is24HourFormat(context)
@@ -97,7 +99,8 @@ fun String.capitalized(locale: Locale): String = replaceFirstChar { if (it.isLow
 
 fun DayOfWeek.shortName(locale: Locale): String = getDisplayName(TextStyle.SHORT, locale).capitalized(locale)
 fun DayOfWeek.longName(locale: Locale): String = getDisplayName(TextStyle.FULL_STANDALONE, locale).capitalized(locale)
-fun DayOfWeek.narrowName(locale: Locale): String = getDisplayName(TextStyle.NARROW_STANDALONE, locale).capitalized(locale)
+/** The first two letters of the short name, "Su" for Sunday; narrow names repeat letters ("S" for both weekend days). */
+fun DayOfWeek.twoLetterName(locale: Locale): String = shortName(locale).take(2)
 
 fun YearMonth.title(locale: Locale): String =
     DateTimeFormatter.ofPattern("LLLL yyyy", locale).format(this).capitalized(locale)

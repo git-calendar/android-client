@@ -1,5 +1,6 @@
 package dev.jotalac.ui.calendar
 
+import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,19 +9,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +30,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.jotalac.R
+import dev.jotalac.ui.common.FormButton
+import dev.jotalac.ui.common.FormButtons
+import dev.jotalac.ui.common.FormDialog
+import dev.jotalac.ui.common.FormHint
+import dev.jotalac.ui.common.FormTextField
+import dev.jotalac.ui.common.formTextStyle
 import dev.jotalac.ui.theme.TagColor
 import dev.jotalac.ui.theme.contentColorOn
 
@@ -52,56 +53,41 @@ fun TagDialog(
     var color by rememberSaveable { mutableStateOf(target.tag?.color ?: if (untagged) defaultColor else "blue") }
     var nameError by rememberSaveable { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                if (target.tag == null) stringResource(R.string.create_tag, target.calendar)
-                else stringResource(R.string.edit_tag, target.tag.name)
+    FormDialog(
+        onDismiss,
+        if (target.tag == null) stringResource(R.string.create_tag, target.calendar)
+        else stringResource(R.string.edit_tag, target.tag.name),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FormTextField(
+                value = if (untagged) stringResource(R.string.tag_untagged) else name,
+                onValueChange = { name = it; nameError = false },
+                placeholder = stringResource(R.string.tag_name),
+                enabled = !untagged,
+                isError = nameError,
+                modifier = Modifier.fillMaxWidth(),
             )
-        },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = if (untagged) stringResource(R.string.tag_untagged) else name,
-                    onValueChange = { name = it; nameError = false },
-                    label = { Text(stringResource(R.string.tag_name)) },
-                    readOnly = untagged,
-                    enabled = !untagged,
-                    singleLine = true,
-                    isError = nameError,
-                    supportingText = if (nameError) {
-                        { Text(stringResource(R.string.error_tag_name_required)) }
-                    } else null,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.size(12.dp))
-                Text(stringResource(R.string.tag_color), style = MaterialTheme.typography.labelLarge)
-                Spacer(Modifier.size(8.dp))
-                ColorPicker(color) { color = it }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
+            if (nameError) FormHint(stringResource(R.string.error_tag_name_required), color = MaterialTheme.colorScheme.error)
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("${stringResource(R.string.tag_color)}:", style = formTextStyle())
+            ColorPicker(color) { color = it }
+        }
+        FormButtons {
+            FormButton(stringResource(R.string.save), {
                 if (!untagged && name.isBlank()) {
                     nameError = true
                 } else {
                     onSave(name.trim(), color)
                     onDismiss()
                 }
-            }) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = {
-            Row {
-                if (target.tag != null && !untagged) {
-                    TextButton(onClick = { onDelete(); onDismiss() }) {
-                        Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            })
+            FormButton(stringResource(R.string.close), onDismiss)
+            if (target.tag != null && !untagged) {
+                FormButton(stringResource(R.string.delete), { onDelete(); onDismiss() }, danger = true)
             }
-        },
-    )
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -112,18 +98,18 @@ fun ColorPicker(selected: String, onSelect: (String) -> Unit) {
             val label = stringResource(option.label)
             Box(
                 Modifier
-                    .size(40.dp)
+                    .size(32.dp)
                     .clip(MaterialTheme.shapes.small)
                     .background(option.color)
                     .then(
-                        if (option.id == selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, MaterialTheme.shapes.small)
+                        if (option.id == selected) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, MaterialTheme.shapes.small)
                         else Modifier
                     )
                     .clickable(role = Role.RadioButton) { onSelect(option.id) }
                     .semantics { contentDescription = label },
                 contentAlignment = Alignment.Center,
             ) {
-                if (option.id == selected) Icon(Icons.Filled.Check, null, tint = contentColorOn(option.color))
+                if (option.id == selected) Icon(AppIcons.Check, null, Modifier.size(18.dp), tint = contentColorOn(option.color))
             }
         }
         Spacer(Modifier.width(1.dp))

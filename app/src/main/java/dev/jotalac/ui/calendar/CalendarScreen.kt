@@ -1,5 +1,6 @@
 package dev.jotalac.ui.calendar
 
+import dev.jotalac.ui.theme.AppIcons
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing
@@ -16,24 +17,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.CalendarViewWeek
-import androidx.compose.material.icons.outlined.CloudDone
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.Sync
-import androidx.compose.material.icons.outlined.CalendarToday
-import androidx.compose.material.icons.outlined.ViewDay
-import androidx.compose.material.icons.outlined.ViewWeek
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +32,6 @@ import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -164,7 +152,6 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
         toggleTag = vm::setTagHidden,
         settings = { closeDrawer(); nav.settings() },
         guide = { closeDrawer(); nav.guide() },
-        sync = { vm.requestSync(); closeDrawer() },
         sourceCode = {
             context.startActivity(Intent(Intent.ACTION_VIEW, "https://github.com/git-calendar".toUri()))
         },
@@ -213,7 +200,7 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                         navigationIcon = {
                             if (!wide) {
                                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Filled.Menu, stringResource(R.string.open_drawer))
+                                    Icon(AppIcons.LayoutSidebar, stringResource(R.string.open_drawer))
                                 }
                             }
                         },
@@ -221,10 +208,10 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                             SyncStatusButton(syncStatus, vm::requestSync)
                             if (wide) {
                                 IconButton(onClick = { vm.shift(-1) }) {
-                                    Icon(Icons.Filled.ChevronLeft, stringResource(R.string.previous_period))
+                                    Icon(AppIcons.ChevronLeft, stringResource(R.string.previous_period))
                                 }
                                 IconButton(onClick = { vm.shift(1) }) {
-                                    Icon(Icons.Filled.ChevronRight, stringResource(R.string.next_period))
+                                    Icon(AppIcons.ChevronRight, stringResource(R.string.next_period))
                                 }
                             }
                             IconButton(onClick = vm::today) {
@@ -236,12 +223,17 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                     )
                 },
                 floatingActionButton = {
-                    // keeps Material's usual rounded shape, unlike the square theme
+                    // nearly square and flat like the app's other buttons, not Material's rounded floating one
+                    // in the accent color of the now line and its time label
                     FloatingActionButton(
                         onClick = { actions.create(newEventDraft(vm.defaultCalendar())) },
-                        shape = ShapeDefaults.Large,
+                        modifier = Modifier.size(44.dp),
+                        shape = MaterialTheme.shapes.small,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        elevation = FloatingActionButtonDefaults.loweredElevation(),
                     ) {
-                        Icon(Icons.Filled.Add, stringResource(R.string.new_event))
+                        Icon(AppIcons.Plus, stringResource(R.string.new_event), Modifier.size(20.dp))
                     }
                 },
                 snackbarHost = { SnackbarHost(snackbar) },
@@ -254,7 +246,7 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
 
         if (wide) {
             Row(Modifier.fillMaxSize()) {
-                PermanentDrawerSheet(Modifier.width(300.dp)) { drawer() }
+                PermanentDrawerSheet(Modifier.width(280.dp)) { drawer() }
                 Box(Modifier.weight(1f)) { content() }
             }
         } else {
@@ -263,7 +255,7 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                 drawerState = drawerState,
                 // Edge swipes would fight the calendar's own horizontal paging.
                 gesturesEnabled = drawerState.isOpen,
-                drawerContent = { ModalDrawerSheet { drawer() } },
+                drawerContent = { ModalDrawerSheet(Modifier.width(280.dp)) { drawer() } },
             ) { content() }
         }
     }
@@ -329,7 +321,7 @@ private fun TodayIcon(contentDescription: String) {
         }
     }
     Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-        Icon(Icons.Outlined.CalendarToday, contentDescription)
+        Icon(AppIcons.Calendar, contentDescription)
         Text(
             today.dayOfMonth.toString(),
             // centered in the page below the calendar's top bar; fixed size so it fits at any font scale
@@ -352,9 +344,9 @@ private fun SyncStatusButton(status: SyncStatus, onSync: () -> Unit) {
         label = "sync-rotation",
     )
     val (icon, label) = when (status) {
-        SyncStatus.Offline -> Icons.Outlined.CloudOff to R.string.sync_status_offline
-        SyncStatus.Idle -> Icons.Outlined.CloudDone to R.string.sync_status_idle
-        SyncStatus.Syncing -> Icons.Outlined.Sync to R.string.sync_status_syncing
+        SyncStatus.Offline -> AppIcons.CloudOff to R.string.sync_status_offline
+        SyncStatus.Idle -> AppIcons.Cloud to R.string.sync_status_idle
+        SyncStatus.Syncing -> AppIcons.RefreshCcw to R.string.sync_status_syncing
     }
     IconButton(onClick = onSync, enabled = status != SyncStatus.Syncing) {
         Icon(
@@ -378,11 +370,11 @@ private val CalendarViewType.label: Int
     }
 
 private val CalendarViewType.icon: ImageVector
-    get() = when (this) {
-        CalendarViewType.Day -> Icons.Outlined.ViewDay
-        CalendarViewType.FourDays -> Icons.Outlined.ViewWeek
-        CalendarViewType.Week -> Icons.Outlined.CalendarViewWeek
-        CalendarViewType.Month -> Icons.Outlined.CalendarMonth
+    @Composable get() = when (this) {
+        CalendarViewType.Day -> AppIcons.Columns1
+        CalendarViewType.FourDays -> AppIcons.Columns3
+        CalendarViewType.Week -> AppIcons.CalendarWeek
+        CalendarViewType.Month -> AppIcons.CalendarMonth
     }
 
 @OptIn(ExperimentalMaterial3Api::class)

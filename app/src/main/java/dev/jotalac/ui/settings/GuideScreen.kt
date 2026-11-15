@@ -1,5 +1,6 @@
 package dev.jotalac.ui.settings
 
+import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,78 +24,84 @@ import dev.jotalac.R
 
 private data class GuideSection(val title: String, val steps: List<String>, val note: String? = null)
 
-// Like the web client's Guide.vue, the guide is English only; its gesture tips are adapted to touch.
+// The guide is English only.
 private val SECTIONS = listOf(
     GuideSection(
         "Quick start",
         listOf(
-            "Add a repository: open the menu and tap + next to Calendars.",
-            "Create an event: tap the + button, or press and hold an empty time range and drag.",
-            "Sync changes: all changes are synced automatically when a calendar has a Git remote.",
+            "Add a calendar: open the menu with the button at the top left and tap + next to Calendars.",
+            "Create an event: tap the + button at the bottom right, or press and hold an empty time and drag.",
+            "Sync: calendars with a Git remote sync on their own. Tap the cloud icon in the top bar to sync right away.",
         ),
     ),
     GuideSection(
-        "Create a repository",
+        "Create a calendar",
         listOf(
             "Tap + next to Calendars and choose Init.",
             "Enter a name, such as My Calendar.",
-            "For remote syncing, create an empty repository on your Git provider and paste its HTTPS URL. The URL must end in .git.",
-            "For a private remote, enter your username and/or access token/password.",
-            "Enable encryption if desired, save the key somewhere safe, and create the repository.",
+            "To sync it, create an empty repository with your Git provider and paste its HTTPS URL. The URL must end in .git.",
+            "For a private repository, enter your username and an access token.",
+            "Turn on Encrypted if you want, keep the key somewhere safe, and save.",
         ),
     ),
     GuideSection(
-        "Clone a repository",
+        "Clone a calendar",
         listOf(
-            "Copy the HTTPS clone URL, for example https://host/user/calendar.git.",
+            "Copy the repository's HTTPS URL, for example https://host/user/calendar.git.",
             "Tap + next to Calendars and choose Clone.",
-            "Paste the URL and add credentials if the repository is private.",
-            "Enable Read-only if you only want to view the calendar.",
-            "If the repository is encrypted, enable encryption and enter its existing key.",
+            "Paste the URL and add your credentials if the repository is private.",
+            "Turn on Read-only if you only want to view the calendar.",
+            "If the repository is encrypted, turn on Encrypted and enter its key.",
         ),
-        "Encryption keys cannot be recovered from the repository. You need the same key on every device that clones it.",
+        "Encryption keys cannot be recovered. Every phone or computer that opens the calendar needs the same key.",
     ),
     GuideSection(
-        "Importing iCalendar",
+        "iCalendar",
         listOf(
-            "Import a file: events from an .ics file are copied into a writable repository and become regular Git Calendar events. Later changes to the original file are not synchronized.",
-            "Subscribe to a feed: an HTTPS URL to an .ics feed creates a read-only calendar. The feed is refreshed during sync, and the last downloaded copy stays available offline.",
+            "Import a file: the events of an .ics file are copied into one of your calendars. Later changes to the file are not picked up.",
+            "Subscribe to a URL: an .ics link becomes a read-only calendar that refreshes when it syncs and stays available offline.",
         ),
-        "To change events in a subscribed calendar, edit them in the service that publishes the feed.",
+        "Events in a subscribed calendar can only be changed in the service that publishes it.",
     ),
     GuideSection(
         "Gestures",
         listOf(
             "Open: tap an event to see or edit it.",
-            "Create: press and hold empty time or the all-day row, drag over the range, then release to open the event form.",
-            "Move: press and hold an event, then drag it vertically to change its time or sideways to another day. In the month view, drag it to another day.",
-            "Resize: press and hold near the top or bottom edge of an event and drag.",
-            "Precision: change the drag interval in Settings.",
-            "Next and previous period: swipe left or right across the calendar.",
-            "Day: tap a day in the month view to open it on its own; Back returns to the month.",
-            "Zoom: pinch the timeline to make hours taller, then scroll vertically. Swiping to another period keeps the zoom and scroll position.",
+            "Create: press and hold an empty time or the all-day row, drag over the range, then let go.",
+            "Move: press and hold an event and drag it to another time or day.",
+            "Resize: press and hold the top or bottom edge of an event and drag.",
+            "Switch period: swipe left or right.",
+            "Day: tap a day in the month view to open it; Back returns to the month.",
+            "Zoom: pinch the timeline to make hours taller, then scroll up and down.",
         ),
-        "Events in read-only repositories cannot be dragged or edited.",
+        "Events in read-only calendars cannot be moved or edited.",
     ),
     GuideSection(
-        "Keyboard shortcuts",
+        "Top bar and menu",
         listOf(
-            "N: create a new event",
-            "T: go to today",
-            "D / 4 / W / M: switch to the day, four-day, week or month view",
-            "← / →: move to the previous or next period",
+            "Cloud icon: shows the sync status; tap it to sync now.",
+            "Today: jumps back to today.",
+            "View: switches between the day, 4-day, week and month views.",
+            "Go to date: in the menu, jumps to any date.",
+            "Tags: the checkboxes under each calendar show or hide its tags; the pencil changes a tag's name or color.",
         ),
-        "Shortcuts work with a hardware keyboard while the calendar is open.",
     ),
     GuideSection(
-        "Other controls",
+        "Reminders and widget",
         listOf(
-            "Filter: use the checkboxes under each repository to show or hide its tags.",
-            "Go to date: use Go to date in the menu to jump directly to any date.",
-            "Location: suggestions come from your other events' locations and the phone's address search. The map button opens the place in your maps app; for a meeting link it joins the meeting.",
-            "Edit: tap an event to update its details, repeat rule, repository, or tag.",
-            "Reminders: add reminders to an event to get a notification before it starts.",
-            "Private remotes: prefer an access token over your Git provider account password.",
+            "Reminders: add them to an event to get a notification before it starts.",
+            "Background sync: keeps calendars and reminders up to date while the app is closed. Turn it off in Settings.",
+            "Widget: hold an empty spot on your home screen, tap Widgets and add Upcoming events from Git Calendar.",
+        ),
+    ),
+    GuideSection(
+        "Settings",
+        listOf(
+            "Hour range: the hours the timeline shows on screen.",
+            "Fit hours to screen: shows the hour range without scrolling.",
+            "Drag precision: how far an event moves per step when dragged.",
+            "Colors: Git colors or colors from your wallpaper.",
+            "Data: export your calendars or restore a ZIP backup.",
         ),
     ),
 )
@@ -110,7 +115,7 @@ fun GuideScreen(onBack: () -> Unit) {
                 title = { Text("How to use Git Calendar") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        Icon(AppIcons.ArrowLeft, stringResource(R.string.back))
                     }
                 },
             )
