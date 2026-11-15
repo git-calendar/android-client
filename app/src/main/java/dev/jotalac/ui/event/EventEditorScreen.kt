@@ -68,6 +68,7 @@ import dev.jotalac.ui.common.FormDialog
 import dev.jotalac.ui.common.FormDialogContent
 import dev.jotalac.ui.common.FormGap
 import dev.jotalac.ui.common.FormHint
+import dev.jotalac.ui.common.LocalDisabledAlpha
 import dev.jotalac.ui.common.FormIconButton
 import dev.jotalac.ui.common.FormSelect
 import dev.jotalac.ui.common.FormTextField
@@ -81,6 +82,7 @@ import dev.jotalac.ui.common.shortName
 import dev.jotalac.ui.common.use24Hour
 import dev.jotalac.ui.common.userMessage
 import dev.jotalac.ui.common.weekDays
+import dev.jotalac.ui.theme.GitOrange
 import dev.jotalac.ui.theme.TagColor
 import java.time.Instant
 import java.time.LocalDate
@@ -105,63 +107,66 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     val enabled = !vm.readonly && !vm.saving
 
-    FormDialogContent(
-        stringResource(
-            when {
-                vm.readonly -> R.string.event_view
-                vm.isNew -> R.string.event_new
-                else -> R.string.event_edit
+    // Read-only events fade their fields only slightly, so the values stay readable.
+    CompositionLocalProvider(LocalDisabledAlpha provides if (vm.readonly) 0.85f else LocalDisabledAlpha.current) {
+        FormDialogContent(
+            stringResource(
+                when {
+                    vm.readonly -> R.string.event_view
+                    vm.isNew -> R.string.event_new
+                    else -> R.string.event_edit
+                }
+            ),
+            wide = true,
+        ) {
+            if (vm.readonly) FormHint(stringResource(R.string.event_readonly), color = GitOrange)
+            FormTextField(
+                value = vm.title,
+                onValueChange = { vm.title = it; vm.error = null },
+                placeholder = stringResource(R.string.event_title),
+                enabled = enabled,
+                isError = vm.error == R.string.error_missing_title,
+                textStyle = formTextStyle().copy(fontSize = MaterialTheme.typography.titleMedium.fontSize),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DateTimeRow(stringResource(R.string.event_from), vm.fromDate, vm.fromTime, vm.allDay, enabled, settings,
+                    onDate = { d ->
+                        // Keep the duration when the start date moves, like most calendar apps.
+                        val shift = java.time.temporal.ChronoUnit.DAYS.between(vm.fromDate, d)
+                        vm.fromDate = d
+                        vm.toDate = vm.toDate.plusDays(shift)
+                    },
+                    onTime = { vm.fromTime = it })
+                DateTimeRow(stringResource(R.string.event_to), vm.toDate, vm.toTime, vm.allDay, enabled, settings,
+                    onDate = { vm.toDate = it }, onTime = { vm.toTime = it },
+                    isError = vm.error == R.string.error_bad_to_date)
             }
-        ),
-        wide = true,
-    ) {
-        if (vm.readonly) FormHint(stringResource(R.string.event_readonly))
-        FormTextField(
-            value = vm.title,
-            onValueChange = { vm.title = it; vm.error = null },
-            placeholder = stringResource(R.string.event_title),
-            enabled = enabled,
-            isError = vm.error == R.string.error_missing_title,
-            textStyle = formTextStyle().copy(fontSize = MaterialTheme.typography.titleMedium.fontSize),
-            modifier = Modifier.fillMaxWidth(),
-        )
+            FormCheckbox(stringResource(R.string.event_entire_day), vm.allDay, { vm.allDay = it }, enabled = enabled)
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            DateTimeRow(stringResource(R.string.event_from), vm.fromDate, vm.fromTime, vm.allDay, enabled, settings,
-                onDate = { d ->
-                    // Keep the duration when the start date moves, like most calendar apps.
-                    val shift = java.time.temporal.ChronoUnit.DAYS.between(vm.fromDate, d)
-                    vm.fromDate = d
-                    vm.toDate = vm.toDate.plusDays(shift)
-                },
-                onTime = { vm.fromTime = it })
-            DateTimeRow(stringResource(R.string.event_to), vm.toDate, vm.toTime, vm.allDay, enabled, settings,
-                onDate = { vm.toDate = it }, onTime = { vm.toTime = it },
-                isError = vm.error == R.string.error_bad_to_date)
-        }
-        FormCheckbox(stringResource(R.string.event_entire_day), vm.allDay, { vm.allDay = it }, enabled = enabled)
+            RepeatFields(vm, enabled) { customDialog = true }
+            ReminderFields(vm, enabled) {
+                if (vm.addReminder()) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            CalendarAndTag(vm, enabled)
+            LocationField(vm, enabled)
+            FormTextField(
+                value = vm.description,
+                onValueChange = { vm.description = it },
+                placeholder = stringResource(R.string.event_description),
+                singleLine = false,
+                minLines = 3,
+                enabled = enabled,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-        RepeatFields(vm, enabled) { customDialog = true }
-        ReminderFields(vm, enabled) {
-            if (vm.addReminder()) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        CalendarAndTag(vm, enabled)
-        LocationField(vm, enabled)
-        FormTextField(
-            value = vm.description,
-            onValueChange = { vm.description = it },
-            placeholder = stringResource(R.string.event_description),
-            singleLine = false,
-            minLines = 3,
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        FormButtons {
-            if (!vm.readonly) FormButton(stringResource(R.string.save), vm::save, enabled = enabled)
-            FormButton(stringResource(R.string.close), onClose)
-            if (!vm.readonly && !vm.isNew) {
-                FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = enabled, danger = true)
+            FormButtons {
+                if (!vm.readonly) FormButton(stringResource(R.string.save), vm::save, enabled = enabled)
+                FormButton(stringResource(R.string.close), onClose)
+                if (!vm.readonly && !vm.isNew) {
+                    FormButton(stringResource(R.string.delete), { confirmDelete = true }, enabled = enabled, danger = true)
+                }
             }
         }
     }

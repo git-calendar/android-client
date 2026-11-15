@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -68,7 +69,8 @@ val FieldHeight = 36.dp
 /** Space between form rows, the web client's 1 rem gap. */
 val FormGap = 16.dp
 
-private const val DisabledAlpha = 0.5f
+/** How much disabled controls fade; read-only views raise it so their values stay readable. */
+val LocalDisabledAlpha = compositionLocalOf { 0.5f }
 private val FieldPadding = 10.dp
 
 @Composable
@@ -111,7 +113,7 @@ private fun FieldSurface(
         modifier
             .heightIn(min = FieldHeight)
             .offset(y = if (pressed) 1.dp else 0.dp)
-            .alpha(if (enabled) 1f else DisabledAlpha)
+            .alpha(if (enabled) 1f else LocalDisabledAlpha.current)
             .field(pressed || selected, isError, danger)
             .clickable(interaction, indication = null, enabled = enabled, role = role, onClick = onClick),
         contentAlignment = contentAlignment,
@@ -140,7 +142,7 @@ fun FormTextField(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.alpha(if (enabled) 1f else DisabledAlpha),
+        modifier = modifier.alpha(if (enabled) 1f else LocalDisabledAlpha.current),
         enabled = enabled,
         textStyle = textStyle,
         keyboardOptions = keyboardOptions,
@@ -286,7 +288,7 @@ fun FormCheckbox(
     Row(
         modifier
             .heightIn(min = FieldHeight)
-            .alpha(if (enabled) 1f else DisabledAlpha)
+            .alpha(if (enabled) 1f else LocalDisabledAlpha.current)
             .toggleable(checked, remember { MutableInteractionSource() }, null, enabled, Role.Checkbox, onChange),
         horizontalArrangement = if (spread) Arrangement.SpaceBetween else Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,

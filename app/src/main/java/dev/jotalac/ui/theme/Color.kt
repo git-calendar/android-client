@@ -7,6 +7,9 @@ import dev.jotalac.R
 /** The git-calendar red (web-client themes.css --git-base). */
 val GitRed = Color(0xFFF03C2E)
 
+/** The orange of the git logo, for notices that should stand out. */
+val GitOrange = Color(0xFFF05033)
+
 /** Tag color palette, identical to web-client/src/colors.ts. Tags store the [id], not the hex value. */
 enum class TagColor(val id: String, val color: Color, @StringRes val label: Int) {
     Blue("blue", Color(0xFF00579F), R.string.color_blue),
