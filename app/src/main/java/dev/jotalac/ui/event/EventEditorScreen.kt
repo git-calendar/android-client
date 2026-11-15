@@ -21,7 +21,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DatePickerState
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
+import android.content.res.Configuration
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -235,21 +238,24 @@ private fun DateTimeRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerFor(date: LocalDate, onDismiss: () -> Unit, onPick: (LocalDate) -> Unit) {
-    // the picker formats with the app language by default, which has no month names for Git
+    // the picker reads its language from the configuration, and Git has no month names there;
+    // the dialog's window provides the app's configuration again, so the picker inside needs it too
+    val configuration = LocalConfiguration.current
     val locale = currentLocale()
-    val state = remember(locale) {
-        DatePickerState(locale, initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+    val pickerConfiguration = remember(configuration, locale) { Configuration(configuration).apply { setLocale(locale) } }
+    CompositionLocalProvider(LocalConfiguration provides pickerConfiguration) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        DatePickerDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { onPick(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
+                    onDismiss()
+                }) { Text(stringResource(R.string.ok)) }
+            },
+            dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        ) { CompositionLocalProvider(LocalConfiguration provides pickerConfiguration) { DatePicker(state) } }
     }
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = {
-                state.selectedDateMillis?.let { onPick(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
-                onDismiss()
-            }) { Text(stringResource(R.string.ok)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    ) { DatePicker(state) }
 }
 
 // ------------------------------------------- repeat --------------------------------------------
