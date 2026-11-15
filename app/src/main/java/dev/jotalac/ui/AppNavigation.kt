@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -75,8 +76,12 @@ fun AppNavigation(container: AppContainer) {
             val vm = viewModel { CalendarEditorViewModel(container, route.name) }
             CalendarEditorScreen(vm, back)
         }
-        composable<SettingsRoute> { SettingsScreen(container, back) { nav.navigate(FilesRoute) } }
-        composable<GuideRoute> { GuideScreen(back) }
-        composable<FilesRoute> { FilesScreen(container.core.storageRoot, back) }
+        // a screen still fading out sits on top and takes taps meant for the one below;
+        // dropUnlessResumed ignores them so its back arrow can't pop the calendar too
+        composable<SettingsRoute> {
+            SettingsScreen(container, dropUnlessResumed(block = back), dropUnlessResumed { nav.navigate(FilesRoute) })
+        }
+        composable<GuideRoute> { GuideScreen(dropUnlessResumed(block = back)) }
+        composable<FilesRoute> { FilesScreen(container.core.storageRoot, dropUnlessResumed(block = back)) }
     }
 }
