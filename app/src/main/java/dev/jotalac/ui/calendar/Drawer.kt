@@ -1,5 +1,8 @@
 package dev.jotalac.ui.calendar
 
+import android.content.pm.ApplicationInfo
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import dev.jotalac.ui.theme.AppIcons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -79,7 +82,7 @@ fun DrawerContent(
                     Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(24.dp / 0.36f))
                 }
                 Text(
-                    stringResource(R.string.app_name),
+                    stringResource(R.string.app_title),
                     Modifier.padding(start = 12.dp),
                     style = MaterialTheme.typography.titleLarge,
                 )
@@ -118,8 +121,26 @@ fun DrawerContent(
             ListAction(AppIcons.HelpCircle, stringResource(R.string.guide), 22.dp, 44.dp, actions.guide)
             ListAction(AppIcons.Github, stringResource(R.string.source_code), 22.dp, 44.dp, actions.sourceCode)
         }
+        Text(
+            stringResource(R.string.app_version, appVersion()),
+            Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
     if (pickingDate) DatePickerFor(date, onDismiss = { pickingDate = false }, onPick = actions.pickDate)
+}
+
+/** The installed version name, such as "1.2.3", with " (debug)" for debug builds. */
+@Composable
+private fun appVersion(): String {
+    val context = LocalContext.current
+    return remember(context) {
+        val name = context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
+        val debug = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        if (debug) "$name (debug)" else name
+    }
 }
 
 @Composable

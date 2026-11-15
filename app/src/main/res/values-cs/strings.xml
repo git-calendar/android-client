@@ -9,6 +9,7 @@
     <string name="settings">Nastavení</string>
     <string name="guide">Návod</string>
     <string name="source_code">Zdrojový kód na GitHubu</string>
+    <string name="app_version">Verze %1$s</string>
     <string name="open_drawer">Otevřít nabídku</string>
     <string name="previous_period">Předchozí období</string>
     <string name="next_period">Následující období</string>

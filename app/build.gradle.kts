@@ -16,8 +16,8 @@ android {
         targetSdk = 37
 
         // get the version code and name from gradle.properties - only file to bump the verion on new release
-        val appVersionNumber = project.findProject("app.version.number") as? String ?: "1.0.0"
-        val (major, minor, patch) = appVerhionNumber.split(".").map { it.toInt() }
+        val appVersionNumber = project.findProperty("app.version.number") as? String ?: "1.0.0"
+        val (major, minor, patch) = appVersionNumber.split(".").map { it.toInt() }
         require(minor < 100 && patch < 100) { "minor and patch must be smaller then 100" }
 
         versionCode = major * 10_000 + minor * 100 + patch
