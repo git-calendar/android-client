@@ -27,6 +27,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
@@ -278,6 +279,9 @@ class ScheduleWidget : GlanceAppWidget() {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
+                // tells the launcher this is the widget's background, so opening and closing the app morphs
+                // between the app's window and this box and its corners instead of guessing
+                .appWidgetBackground()
                 .background(colors.of { it.surface })
                 .let {
                     when (state.theme) {
