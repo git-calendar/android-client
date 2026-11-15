@@ -22,6 +22,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +32,6 @@ import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -223,12 +223,17 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
                     )
                 },
                 floatingActionButton = {
-                    // keeps Material's usual rounded shape, unlike the square theme
+                    // nearly square and flat like the app's other buttons, not Material's rounded floating one
+                    // in the accent color of the now line and its time label
                     FloatingActionButton(
                         onClick = { actions.create(newEventDraft(vm.defaultCalendar())) },
-                        shape = ShapeDefaults.Large,
+                        modifier = Modifier.size(44.dp),
+                        shape = MaterialTheme.shapes.small,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        elevation = FloatingActionButtonDefaults.loweredElevation(),
                     ) {
-                        Icon(AppIcons.Plus, stringResource(R.string.new_event))
+                        Icon(AppIcons.Plus, stringResource(R.string.new_event), Modifier.size(20.dp))
                     }
                 },
                 snackbarHost = { SnackbarHost(snackbar) },
