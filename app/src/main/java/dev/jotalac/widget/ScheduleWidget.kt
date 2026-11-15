@@ -215,7 +215,10 @@ class ScheduleWidget : GlanceAppWidget() {
         )
         val times = TimeFormatter(use24Hour(context, settings), locale)
         val monthFormat = DateTimeFormatter.ofPattern("LLLL", locale)
-        fun dayLabel(day: LocalDate) = "${day.dayOfMonth}. ${day.dayOfWeek.shortName(locale)}"
+        // today's date is already in the title, so its row just says "Today"
+        fun dayLabel(day: LocalDate) =
+            if (day == now.toLocalDate()) context.getString(R.string.today)
+            else "${day.dayOfMonth}. ${day.dayOfWeek.shortName(locale)}"
         var lastMonth = now.toLocalDate().withDayOfMonth(1)
         val blocks = entries.groupBy { it.day }.flatMap { (day, dayEntries) ->
             val month = day.withDayOfMonth(1)

@@ -38,7 +38,7 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
-            manifestPlaceholders["appName"] = "Git-Calendar (Debug)"
+            manifestPlaceholders["appName"] = "Git Calendar (Debug)"
         }
     }
     compileOptions {
