@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
@@ -66,71 +67,57 @@ fun DrawerContent(
     actions: DrawerActions,
 ) {
     var pickingDate by remember { mutableStateOf(false) }
-    Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp)) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            // the launcher foreground's logo takes only its middle 36%, the rest is padding for the icon mask
-            Box(Modifier.size(24.dp)) {
-                Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(24.dp / 0.36f))
+    Column(Modifier.fillMaxHeight()) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                // the launcher foreground's logo takes only its middle 36%, the rest is padding for the icon mask
+                Box(Modifier.size(24.dp)) {
+                    Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(24.dp / 0.36f))
+                }
+                Text(
+                    stringResource(R.string.app_name),
+                    Modifier.padding(start = 12.dp),
+                    style = MaterialTheme.typography.titleLarge,
+                )
             }
-            Text(
-                stringResource(R.string.app_name),
-                Modifier.padding(start = 12.dp),
-                style = MaterialTheme.typography.titleLarge,
+            NavigationDrawerItem(
+                modifier = Modifier.height(44.dp),
+                shape = MaterialTheme.shapes.small,
+                label = { Text(stringResource(R.string.go_to_date)) },
+                icon = { Icon(AppIcons.Calendar, null) },
+                selected = false,
+                onClick = { pickingDate = true },
             )
-        }
-        NavigationDrawerItem(
-            modifier = Modifier.height(44.dp),
-            shape = MaterialTheme.shapes.small,
-            label = { Text(stringResource(R.string.go_to_date)) },
-            icon = { Icon(AppIcons.Calendar, null) },
-            selected = false,
-            onClick = { pickingDate = true },
-        )
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-        // the calendar list, ported from web-client CalendarList.vue
-        Row(Modifier.fillMaxWidth().padding(start = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "${stringResource(R.string.calendars_title)}:",
-                Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-            )
-            ListAction(AppIcons.Plus, stringResource(R.string.create_calendar), 20.dp, actions.createCalendar)
+            // the calendar list, ported from web-client CalendarList.vue
+            Row(Modifier.fillMaxWidth().padding(start = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${stringResource(R.string.calendars_title)}:",
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                ListAction(AppIcons.Plus, stringResource(R.string.create_calendar), 20.dp, onClick = actions.createCalendar)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                calendars.forEach { CalendarItem(it, settings, hidden, actions) }
+            }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            calendars.forEach { CalendarItem(it, settings, hidden, actions) }
+        // pinned under the scrolling list
+        HorizontalDivider(Modifier.padding(horizontal = 12.dp))
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+        ) {
+            ListAction(AppIcons.Settings, stringResource(R.string.settings), 22.dp, 44.dp, actions.settings)
+            ListAction(AppIcons.HelpCircle, stringResource(R.string.guide), 22.dp, 44.dp, actions.guide)
+            ListAction(AppIcons.Github, stringResource(R.string.source_code), 22.dp, 44.dp, actions.sourceCode)
         }
-
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        NavigationDrawerItem(
-            modifier = Modifier.height(44.dp),
-            shape = MaterialTheme.shapes.small,
-            label = { Text(stringResource(R.string.settings)) },
-            icon = { Icon(AppIcons.Settings, null) },
-            selected = false,
-            onClick = actions.settings,
-        )
-        NavigationDrawerItem(
-            modifier = Modifier.height(44.dp),
-            shape = MaterialTheme.shapes.small,
-            label = { Text(stringResource(R.string.guide)) },
-            icon = { Icon(AppIcons.HelpCircle, null) },
-            selected = false,
-            onClick = actions.guide,
-        )
-        NavigationDrawerItem(
-            modifier = Modifier.height(44.dp),
-            shape = MaterialTheme.shapes.small,
-            label = { Text(stringResource(R.string.source_code)) },
-            icon = { Icon(AppIcons.Github, null) },
-            selected = false,
-            onClick = actions.sourceCode,
-        )
     }
     if (pickingDate) DatePickerFor(date, onDismiss = { pickingDate = false }, onPick = actions.pickDate)
 }
@@ -210,9 +197,9 @@ private fun CalendarItem(calendar: Calendar, settings: Settings, hidden: HiddenT
 
 /** A transparent icon button of the calendar list, small like the web client's. */
 @Composable
-private fun ListAction(icon: ImageVector, description: String, iconSize: Dp, onClick: () -> Unit) {
+private fun ListAction(icon: ImageVector, description: String, iconSize: Dp, size: Dp = 28.dp, onClick: () -> Unit) {
     Box(
-        Modifier.size(28.dp).clip(MaterialTheme.shapes.small).clickable(role = Role.Button, onClick = onClick),
+        Modifier.size(size).clip(MaterialTheme.shapes.small).clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, description, Modifier.size(iconSize))
