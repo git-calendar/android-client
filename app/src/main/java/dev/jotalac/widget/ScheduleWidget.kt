@@ -72,6 +72,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import dev.jotalac.ui.common.formattingLocale
 import java.util.Locale
 
 /**
@@ -132,7 +133,7 @@ class ScheduleWidget : GlanceAppWidget() {
 
     private suspend fun load(context: Context): ScheduleState {
         val container = context.container
-        val locale = AppCompatDelegate.getApplicationLocales()[0] ?: Locale.getDefault()
+        val locale = formattingLocale(AppCompatDelegate.getApplicationLocales()[0] ?: Locale.getDefault())
         val now = ZonedDateTime.now(ZoneId.systemDefault())
         val headerWeekday = now.format(DateTimeFormatter.ofPattern("EEEE", locale))
         val header = now.format(DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "MMMMd"), locale))

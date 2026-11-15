@@ -57,7 +57,13 @@ fun ConfirmDialog(
 
 @Composable
 @ReadOnlyComposable
-fun currentLocale(): Locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+fun currentLocale(): Locale = formattingLocale(LocalConfiguration.current.locales[0] ?: Locale.getDefault())
+
+/**
+ * The made-up Git language (qgt) has no date data in Java, so months come out as "M01"; it formats
+ * dates like English instead.
+ */
+fun formattingLocale(locale: Locale): Locale = if (locale.language == "qgt") Locale.ENGLISH else locale
 
 fun use24Hour(context: Context, settings: Settings): Boolean = when (settings.timeFormat) {
     TimeFormat.System -> DateFormat.is24HourFormat(context)
