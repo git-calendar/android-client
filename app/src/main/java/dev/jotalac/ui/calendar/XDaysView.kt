@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -61,6 +62,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -265,18 +267,22 @@ private fun BoxScope.NowLabel(frame: TimelineFrame, times: TimeFormatter) {
             .offset(y = y - NowLabelHeight / 2)
             .padding(end = 2.dp)
             .height(NowLabelHeight)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(7.dp))
             .background(MaterialTheme.colorScheme.primary)
             .padding(horizontal = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             times.shortTime(now),
-            fontSize = 10.sp,
-            lineHeight = 12.sp,
+            fontSize = 11.sp,
+            lineHeight = 11.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onPrimary,
             maxLines = 1,
+            // trim the font's extra ascent/descent so the digits sit in the label's true vertical center
+            style = LocalTextStyle.current.copy(
+                lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+            ),
         )
     }
 }
