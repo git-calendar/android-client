@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 
 class GitCalendarApp : Application() {
@@ -58,6 +59,9 @@ val Context.container: AppContainer get() = (applicationContext as GitCalendarAp
 /** An event opened in the editor; [original] is the stored event when [event] is an edited draft of it. */
 data class EditorRequest(val event: Event, val original: Event?)
 
+/** An event tapped in the widget: its ID and, to tell a repeating event's occurrences apart, its start. */
+data class EventRef(val id: String, val from: Instant)
+
 /** Process-wide dependencies (manual DI). */
 class AppContainer(context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -78,6 +82,9 @@ class AppContainer(context: Context) {
 
     /** Set when the widget's new-event button opened the app; the navigation opens the editor. */
     val newEventRequested = MutableStateFlow(false)
+
+    /** Set when an event was tapped in the widget; the navigation opens it in the editor. */
+    val openEvent = MutableStateFlow<EventRef?>(null)
 
     /** Completes once calendars are loaded; holds the startup error, if any. */
     val ready: Deferred<CoreException?> = scope.async {

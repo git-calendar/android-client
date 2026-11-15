@@ -164,6 +164,9 @@
     <string name="settings_theme_dark">Tmavé</string>
     <string name="settings_colors">Barvy</string>
     <string name="settings_colors_dynamic">Podle tapety (Material You)</string>
+    <string name="settings_widget_theme">Widget</string>
+    <string name="settings_widget_theme_app">Jako aplikace</string>
+    <string name="settings_widget_theme_nothing">Nothing OS</string>
     <string name="settings_time_format">Formát času</string>
     <string name="settings_time_system">Podle systému</string>
     <string name="settings_12h">12ti hodinový čas</string>

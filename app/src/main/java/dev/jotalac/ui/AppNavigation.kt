@@ -14,6 +14,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.jotalac.AppContainer
 import dev.jotalac.EditorRequest
+import dev.jotalac.EventRef
+import dev.jotalac.core.CoreException
+import dev.jotalac.core.Event
+import java.time.ZoneId
 import dev.jotalac.ui.calendar.CalendarNavigation
 import dev.jotalac.ui.calendar.CalendarScreen
 import dev.jotalac.ui.calendar.CalendarViewModel
@@ -51,6 +55,18 @@ fun AppNavigation(container: AppContainer) {
         }
     }
 
+    // an event tapped in the widget: open it in the editor like a tap in the calendar does
+    LaunchedEffect(Unit) {
+        container.openEvent.collect { ref ->
+            if (ref == null) return@collect
+            container.openEvent.value = null
+            if (container.ready.await() != null) return@collect
+            val event = findEvent(container, ref) ?: return@collect
+            container.editorRequest.value = EditorRequest(event, null)
+            nav.navigate(EventEditorRoute) { launchSingleTop = true }
+        }
+    }
+
     NavHost(nav, startDestination = CalendarRoute) {
         composable<CalendarRoute> {
             val vm = viewModel { CalendarViewModel(container, createSavedStateHandle()) }
@@ -84,4 +100,16 @@ fun AppNavigation(container: AppContainer) {
         composable<GuideRoute> { GuideScreen(dropUnlessResumed(block = back)) }
         composable<FilesRoute> { FilesScreen(container.core.storageRoot, dropUnlessResumed(block = back)) }
     }
+}
+
+/**
+ * The occurrence [ref] points to, as the calendar shows it, or null when it is gone (deleted or synced
+ * away since the widget drew it).
+ */
+private suspend fun findEvent(container: AppContainer, ref: EventRef): Event? = try {
+    val from = ref.from.atZone(ZoneId.systemDefault())
+    container.core.getEvents(from, from.plusMinutes(1), null)
+        .firstOrNull { it.id == ref.id && it.from.toInstant() == ref.from }
+} catch (e: CoreException) {
+    null
 }

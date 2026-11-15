@@ -42,6 +42,7 @@ import dev.jotalac.data.CalendarViewType
 import dev.jotalac.data.ColorSource
 import dev.jotalac.data.Settings
 import dev.jotalac.data.ThemeMode
+import dev.jotalac.data.WidgetTheme
 import dev.jotalac.data.TimeFormat
 import dev.jotalac.ui.calendar.ColorPicker
 import dev.jotalac.ui.common.ConfirmDialog
@@ -108,6 +109,10 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onFiles: () -> U
                 stringResource(R.string.settings_colors), settings.colorSource,
                 listOf(ColorSource.Dynamic to R.string.settings_colors_dynamic, ColorSource.Git to R.string.settings_colors_git),
             ) { v -> update { it.copy(colorSource = v) } }
+            Setting(
+                stringResource(R.string.settings_widget_theme), settings.widgetTheme,
+                listOf(WidgetTheme.App to R.string.settings_widget_theme_app, WidgetTheme.Nothing to R.string.settings_widget_theme_nothing),
+            ) { v -> update { it.copy(widgetTheme = v) } }
 
             Section(stringResource(R.string.settings_calendar))
             Setting(

@@ -1,7 +1,9 @@
 package dev.jotalac.ui.theme
 
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
@@ -83,6 +85,12 @@ val SquareShapes = Shapes(
     extraLarge = RoundedCornerShape(6.dp),
 )
 
+/** The app's colors for [colorSource], also used by the home-screen widget. */
+fun colorScheme(context: Context, dark: Boolean, colorSource: ColorSource): ColorScheme = when (colorSource) {
+    ColorSource.Dynamic -> if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    ColorSource.Git -> if (dark) GitDarkScheme else GitLightScheme
+}
+
 @Composable
 fun GitCalendarTheme(
     themeMode: ThemeMode = ThemeMode.System,
@@ -94,10 +102,6 @@ fun GitCalendarTheme(
         ThemeMode.Light -> false
         ThemeMode.Dark -> true
     }
-    val context = LocalContext.current
-    val colorScheme = when (colorSource) {
-        ColorSource.Dynamic -> if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        ColorSource.Git -> if (dark) GitDarkScheme else GitLightScheme
-    }
+    val colorScheme = colorScheme(LocalContext.current, dark, colorSource)
     MaterialTheme(colorScheme = colorScheme, typography = Typography, shapes = SquareShapes, content = content)
 }

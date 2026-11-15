@@ -176,6 +176,9 @@
     <string name="settings_colors">Colors</string>
     <string name="settings_colors_dynamic">Wallpaper (Material You)</string>
     <string name="settings_colors_git">Git</string>
+    <string name="settings_widget_theme">Widget</string>
+    <string name="settings_widget_theme_app">Like the app</string>
+    <string name="settings_widget_theme_nothing">Nothing OS</string>
     <string name="settings_time_format">Time format</string>
     <string name="settings_time_system">System default</string>
     <string name="settings_12h">12-hour time</string>
