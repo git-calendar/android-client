@@ -50,6 +50,11 @@ android {
     androidResources {
         generateLocaleConfig = true
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
