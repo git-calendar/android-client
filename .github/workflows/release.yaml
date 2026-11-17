@@ -7,18 +7,26 @@
 #   ANDROID_KEY_ALIAS          the key's alias in the keystore
 #   ANDROID_KEY_PASSWORD       the key's password
 #
-# The version comes from app.version.number in gradle.properties instead of a workflow input, so the tag,
-# the file name and the version the app reports cannot disagree. The tag is the bare version ("1.0.1"),
-# the release title "v1.0.1", like the earlier releases.
+# Runs when a version tag is pushed: `git tag 1.2.3 && git push origin 1.2.3`. The tag is the version - no
+# file holds it - so the tag, the file name and the version the app reports cannot disagree. The tag is the
+# bare version ("1.2.3"), the release title "v1.2.3", like the earlier releases. Only a tag on a commit that
+# is on master is released.
+#
+# The `release` environment must allow these tags, or the run gets no secrets:
+#   gh api -X POST repos/git-calendar/android-client/environments/release/deployment-branch-policies \
+#     -f name='*.*.*' -f type=tag
 #
 # One job on purpose: tests, build and release share one checkout, one core download and one Gradle
 # daemon. A failing step skips everything after it, so nothing is built or published when a test fails.
 name: Release
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      # GitHub's filter syntax: "+" repeats the character before it, "." is a plain dot
+      - "[0-9]+.[0-9]+.[0-9]+"
 
-# two runs for the same branch would race to create the same release
+# a tag pushed again while its run is going waits for it instead of racing it to the same release
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -40,26 +48,25 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # the whole history, to check that the tagged commit is on master
+          fetch-depth: 0
 
-      # Read the version first and stop before building anything if that version is already published.
-      - name: Read the version
+      # Check the tag first and stop before building anything if it must not be released.
+      - name: Read the version from the tag
         run: |
           set -euo pipefail
-          version=$(grep -m1 '^app.version.number=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          version="$GITHUB_REF_NAME"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
-            { echo "::error::app.version.number in gradle.properties is missing or not like 1.2.3: '$version'"; exit 1; }
+            { echo "::error::The tag '$version' is not a version like 1.2.3"; exit 1; }
+          git merge-base --is-ancestor HEAD origin/master ||
+            { echo "::error::The tag $version is on a commit that is not on master"; exit 1; }
           if [ "$(gh release view "$version" --json isDraft -q .isDraft 2>/dev/null)" = "false" ]; then
-            echo "::error::$version is already published. Bump app.version.number in gradle.properties."
-            exit 1
-          fi
-          # An existing tag wins over --target, so the release would point at other code than the APK.
-          tagged=$(git ls-remote --tags origin "refs/tags/$version" | cut -f1)
-          if [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
-            echo "::error::Tag $version already points at ${tagged:0:7}, not at ${GITHUB_SHA:0:7}. Bump app.version.number, or delete the tag if it was never released."
+            echo "::error::$version is already published. Tag a new version."
             exit 1
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
-          echo "Releasing $version"
+          echo "Releasing $version from $(git rev-parse --short HEAD)"
 
       - uses: actions/setup-java@v6
         with:
@@ -90,13 +97,15 @@ jobs:
           (umask 077 && base64 --decode <<< "$KEYSTORE_BASE64" > "$keystore")
           echo "ANDROID_KEYSTORE_FILE=$keystore" >> "$GITHUB_ENV"
 
-      # the passwords only go to this step, read by the signingConfig in app/build.gradle.kts
+      # The passwords only go to this step, read by the signingConfig in app/build.gradle.kts. The version is
+      # passed as the tag says, rather than left to `git describe`, which could pick another tag on the
+      # same commit.
       - name: Build the APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease
+        run: ./gradlew :app:assembleRelease -Papp.version.number="$VERSION"
 
       - name: Check the signature and version
         run: |
@@ -129,11 +138,12 @@ jobs:
             # a re-run adds to the same draft
             gh release upload "$VERSION" "$apk" --clobber
           else
+            # the release is made for the pushed tag, so it points at exactly the commit that was built
             gh release create "$VERSION" \
               --draft \
+              --verify-tag \
               --title "v${VERSION}" \
-              --target "$GITHUB_SHA" \
-              --notes "Built from ${GITHUB_SHA:0:7}. Write the notes, then publish." \
+              --notes "Built from $(git rev-parse --short HEAD). Write the notes, then publish." \
               "$apk"
           fi
 

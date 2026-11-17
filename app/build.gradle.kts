@@ -4,6 +4,20 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// The app version comes from git tags ("1.2.3"), so no file holds it:
+// - the release workflow passes the pushed tag as -Papp.version.number;
+// - every other build asks `git describe`: "1.2.3" on a tagged commit, "1.2.3-4-gabc1234" four commits
+//   after it, so a local or CI build shows which commit it came from;
+// - without git or tags (a shallow clone, a source zip) the version is 0.0.0-dev.
+val appVersion: String = providers.gradleProperty("app.version.number").orNull
+    ?: runCatching {
+        providers.exec {
+            commandLine("git", "describe", "--tags", "--match", "[0-9]*.[0-9]*.[0-9]*")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.get().trim()
+    }.getOrNull()?.takeIf { it.isNotEmpty() }
+    ?: "0.0.0-dev"
+
 android {
     namespace = "dev.jotalac"
     compileSdk {
@@ -15,13 +29,15 @@ android {
         minSdk = 31
         targetSdk = 37
 
-        // get the version code and name from gradle.properties - only file to bump the verion on new release
-        val appVersionNumber = project.findProperty("app.version.number") as? String ?: "1.0.0"
-        val (major, minor, patch) = appVersionNumber.split(".").map { it.toInt() }
+        // version name "1.2.3" (or "1.2.3-4-gabc1234" between releases), version code 10203
+        val (major, minor, patch) = Regex("""^(\d+)\.(\d+)\.(\d+)""").find(appVersion)
+            ?.destructured?.toList()?.map { it.toInt() }
+            ?: error("The version '$appVersion' does not start with major.minor.patch")
         require(minor < 100 && patch < 100) { "minor and patch must be smaller then 100" }
 
-        versionCode = major * 10_000 + minor * 100 + patch
-        versionName = appVersionNumber
+        // Android requires a version code of at least 1, also for 0.0.0-dev builds
+        versionCode = (major * 10_000 + minor * 100 + patch).coerceAtLeast(1)
+        versionName = appVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

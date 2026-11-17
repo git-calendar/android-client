@@ -34,3 +34,7 @@ make fetch-core
 Requirements: Android Studio (Android SDK).
 
 Unit tests: `./gradlew test`. The app needs Android 12 (API 31) or newer.
+
+## Release
+
+Push a version tag, such as `git tag 1.2.3 && git push origin 1.2.3`. The app version comes from the tag (`git describe` for other builds), and the release workflow builds the signed APK into a draft release.
