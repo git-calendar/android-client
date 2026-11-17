@@ -26,8 +26,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing for CI: the release workflow writes the keystore from the `release` environment's
+    // secrets and passes it in these variables. Without them (local builds) the release build stays
+    // unsigned, and Android Studio's "Generate Signed App Bundle or APK" signs it as before.
+    val keystoreFile = providers.environmentVariable("ANDROID_KEYSTORE_FILE").orNull
+    if (keystoreFile != null) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             // R8 code and resource shrinking; the default Android rules are included.
             optimization {
                 enable = true
