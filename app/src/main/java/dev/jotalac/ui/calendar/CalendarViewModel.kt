@@ -189,6 +189,8 @@ class CalendarViewModel(
         loadedEvents[Triple(from, to, hiddenTags.value)].orEmpty()
 
     suspend fun loadEvents(from: ZonedDateTime, to: ZonedDateTime): List<Event> {
+        // events read before the stored calendars are loaded would be empty
+        container.ready.await()
         val hidden = hiddenTags.value
         return try {
             val started = container.edits.loadStarted()
@@ -202,6 +204,8 @@ class CalendarViewModel(
         } catch (e: Exception) {
             _error.value = e
             loadedEvents[Triple(from, to, hidden)].orEmpty()
+        } finally {
+            container.firstEventsLoaded.complete(Unit)
         }
     }
 

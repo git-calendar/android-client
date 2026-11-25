@@ -19,6 +19,7 @@ import dev.jotalac.data.SyncManager
 import dev.jotalac.notifications.ReminderScheduler
 import dev.jotalac.notifications.SyncWorker
 import dev.jotalac.widget.ScheduleWidget
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
 import java.time.LocalDate
 
@@ -94,15 +96,21 @@ class AppContainer(context: Context) {
             }
             core.loadCalendars()
             repository.refreshCalendars()
+            // views that loaded before the stored calendars were read fetch their events again
+            repository.notifyEventsChanged()
             null
         } catch (e: CoreException) {
             e
         }
     }
 
+    /** Completed once the calendar view has loaded its first events from storage. */
+    val firstEventsLoaded = CompletableDeferred<Unit>()
+
     init {
         scope.launch {
             if (ready.await() != null) return@launch
+            awaitFirstEvents()
             sync.requestSync()
             reminders.observe(repository.revision, scope)
             ScheduleWidget.observe(context, this@AppContainer, scope)
@@ -115,7 +123,19 @@ class AppContainer(context: Context) {
     }
 
     fun onForeground() {
-        scope.launch { if (ready.await() == null) sync.requestSync() }
+        scope.launch {
+            if (ready.await() != null) return@launch
+            awaitFirstEvents()
+            sync.requestSync()
+        }
+    }
+
+    /**
+     * The core answers one call at a time and a sync can take long, so the first sync waits until
+     * the stored events are shown; the timeout covers starts without the calendar view (widget, worker).
+     */
+    private suspend fun awaitFirstEvents() {
+        withTimeoutOrNull(2_000) { firstEventsLoaded.await() }
     }
 
     /** Refreshes views and pushes local commits after a change, like the web client does after every mutation. */
