@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +60,20 @@ enum class CreateMode(val label: Int) {
 
 enum class ICalSource(val label: Int) { Url(R.string.calendar_ical_url), File(R.string.calendar_ical_file) }
 
+/** The fields of one kind of calendar form; each create mode keeps its own, so nothing carries over between them. */
+data class CalendarForm(
+    val name: String = "",
+    val url: String = "",
+    val username: String = "",
+    val password: String = "",
+    val encrypted: Boolean = false,
+    val encryptionKey: String = "",
+    val readonly: Boolean = false,
+)
+
+/** Which form is shown: one per create mode and iCal source, and the editor of an existing calendar. */
+private enum class FormKind { Init, Clone, ICalUrl, ICalFile, Edit }
+
 /** Create, edit or remove a calendar. Ported from web-client CalendarModal.vue. */
 class CalendarEditorViewModel(private val container: AppContainer, editName: String?) : ViewModel() {
     val existing: Calendar? = editName?.let { container.repository.calendar(it) }
@@ -67,13 +82,30 @@ class CalendarEditorViewModel(private val container: AppContainer, editName: Str
 
     var mode by mutableStateOf(CreateMode.Init)
     var icalSource by mutableStateOf(ICalSource.Url)
-    var name by mutableStateOf(existing?.name.orEmpty())
-    var url by mutableStateOf("")
-    var username by mutableStateOf("")
-    var password by mutableStateOf("")
-    var encrypted by mutableStateOf(false)
-    var encryptionKey by mutableStateOf("")
-    var readonly by mutableStateOf(existing?.readonly ?: false)
+
+    private val forms = mutableStateMapOf<FormKind, CalendarForm>()
+
+    private val formKind: FormKind
+        get() = when {
+            !isNew -> FormKind.Edit
+            mode == CreateMode.Init -> FormKind.Init
+            mode == CreateMode.Clone -> FormKind.Clone
+            icalSource == ICalSource.Url -> FormKind.ICalUrl
+            else -> FormKind.ICalFile
+        }
+
+    /** The fields of the form shown now. */
+    private var form: CalendarForm
+        get() = forms[formKind] ?: CalendarForm()
+        set(value) { forms[formKind] = value }
+
+    var name: String get() = form.name; set(value) { form = form.copy(name = value) }
+    var url: String get() = form.url; set(value) { form = form.copy(url = value) }
+    var username: String get() = form.username; set(value) { form = form.copy(username = value) }
+    var password: String get() = form.password; set(value) { form = form.copy(password = value) }
+    var encrypted: Boolean get() = form.encrypted; set(value) { form = form.copy(encrypted = value) }
+    var encryptionKey: String get() = form.encryptionKey; set(value) { form = form.copy(encryptionKey = value) }
+    var readonly: Boolean get() = form.readonly; set(value) { form = form.copy(readonly = value) }
     var destination by mutableStateOf(writableCalendars.firstOrNull()?.name.orEmpty())
     var destinationTag by mutableStateOf("")
     var file by mutableStateOf<Uri?>(null)
@@ -89,20 +121,26 @@ class CalendarEditorViewModel(private val container: AppContainer, editName: Str
 
     init {
         existing?.let { cal ->
-            if (cal.isICal) {
-                mode = CreateMode.ICal
-                url = cal.icalUrl
+            if (cal.isICal) mode = CreateMode.ICal
+            val auth = RemoteUrl.split(cal.remoteUrl)
+            forms[FormKind.Edit] = if (cal.isICal) {
+                CalendarForm(name = cal.name, url = cal.icalUrl, readonly = cal.readonly)
             } else {
-                val auth = RemoteUrl.split(cal.remoteUrl)
-                url = auth.url
-                username = auth.username
-                password = auth.password
+                CalendarForm(cal.name, auth.url, auth.username, auth.password, readonly = cal.readonly)
             }
         }
     }
 
     val isICalFile get() = isNew && mode == CreateMode.ICal && icalSource == ICalSource.File
     val isICalUrl get() = mode == CreateMode.ICal && (!isNew || icalSource == ICalSource.Url)
+
+    /** The calendar an error is about: the one being created or edited, the import's destination, none for a clone. */
+    val errorCalendar: String?
+        get() = when (formKind) {
+            FormKind.ICalFile -> destination
+            FormKind.Clone -> null
+            else -> name
+        }
 
     fun tagsOf(calendar: String) = container.repository.calendar(calendar)?.tagList.orEmpty()
 
@@ -270,18 +308,22 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
                         SecretField(vm.password, { vm.password = it }, stringResource(R.string.calendar_password), Modifier.weight(1f))
                     }
                 }
-                if ((vm.isNew && vm.mode == CreateMode.Clone) || (!vm.isNew && vm.url.isNotBlank())) {
-                    FormCheckbox(stringResource(R.string.calendar_readonly), vm.readonly, { vm.readonly = it })
-                }
-                if (vm.isNew) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // the checkboxes sit together, without the gap between form rows
+                Column {
+                    if ((vm.isNew && vm.mode == CreateMode.Clone) || (!vm.isNew && vm.url.isNotBlank())) {
+                        FormCheckbox(stringResource(R.string.calendar_readonly), vm.readonly, { vm.readonly = it })
+                    }
+                    if (vm.isNew) {
                         FormCheckbox(stringResource(R.string.calendar_encrypted), vm.encrypted, { vm.encrypted = it })
                         if (vm.encrypted) {
-                            SecretField(vm.encryptionKey, { vm.encryptionKey = it }, stringResource(R.string.calendar_encryption_key))
+                            SecretField(
+                                vm.encryptionKey, { vm.encryptionKey = it }, stringResource(R.string.calendar_encryption_key),
+                                Modifier.fillMaxWidth().padding(top = 6.dp),
+                            )
                         }
+                    } else if (vm.existing?.encrypted == true) {
+                        FormHint(stringResource(R.string.calendar_is_encrypted))
                     }
-                } else if (vm.existing?.encrypted == true) {
-                    FormHint(stringResource(R.string.calendar_is_encrypted))
                 }
             }
         }
@@ -306,7 +348,7 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
     }
 
     vm.error?.let { MessageDialog(stringResource(it), { vm.error = null }) }
-    vm.failure?.let { MessageDialog(it.userMessage(context, vm.name), { vm.failure = null }) }
+    vm.failure?.let { MessageDialog(it.userMessage(context, vm.errorCalendar), { vm.failure = null }) }
     if (confirmDelete) {
         ConfirmDialog(stringResource(R.string.confirm_calendar_delete), stringResource(R.string.delete), vm::delete, danger = true) {
             confirmDelete = false

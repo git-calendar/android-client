@@ -21,11 +21,47 @@ import java.util.Locale
 
 // ------------------------------------------- errors --------------------------------------------
 
-/** User-facing text for an error, like web-client services/errorHandling.ts formatErrorForUser. */
+/** The core's error codes, which start its error texts ("NETWORK: …"), and their messages. See core/pkg/errcode. */
+private val CORE_ERRORS = mapOf(
+    "NETWORK" to R.string.core_error_network,
+    "PROXY" to R.string.core_error_proxy,
+    "AUTH" to R.string.core_error_auth,
+    "FORBIDDEN" to R.string.core_error_forbidden,
+    "RATELIMIT" to R.string.core_error_rate_limit,
+    "VALIDATION" to R.string.core_error_validation,
+    "STORAGE" to R.string.core_error_storage,
+    "CALENDAR_EXISTS" to R.string.core_error_calendar_exists,
+    "CALENDAR_NOT_FOUND" to R.string.core_error_calendar_not_found,
+    "READONLY" to R.string.core_error_readonly,
+    "EVENT_NOT_FOUND" to R.string.core_error_event_not_found,
+    "TAG_EXISTS" to R.string.core_error_tag_exists,
+    "TAG_NOT_FOUND" to R.string.core_error_tag_not_found,
+    "NAME_REQUIRED" to R.string.core_error_name_required,
+    "DECRYPTION" to R.string.core_error_decryption,
+)
+private val CODE = Regex("""\b([A-Z_]+): """)
+private val CALENDAR = Regex("""calendar "([^"]*)": """)
+
+/**
+ * User-facing text for an error, like web-client services/errorHandling.ts formatErrorForUser: the
+ * translated message of the core's error code, else the core's own text starting with a capital.
+ */
 fun Throwable.userMessage(context: Context, calendarName: String? = null): String {
-    val message = message ?: toString()
-    val calendar = calendarName?.trim()?.takeIf { it.isNotEmpty() }
-    return if (calendar == null) message else context.getString(R.string.core_error_calendar, calendar, message)
+    val raw = message ?: toString()
+    val code = CODE.findAll(raw).firstNotNullOfOrNull { CORE_ERRORS[it.groupValues[1]] }
+    // the core's own text already names its calendars
+    if (code == null && CALENDAR.containsMatchIn(raw)) return raw.sentence()
+    val message = code?.let { context.getString(it) } ?: raw.sentence()
+    val calendars = CALENDAR.findAll(raw).map { it.groupValues[1] }.distinct().toList()
+        .ifEmpty { listOfNotNull(calendarName?.trim()?.takeIf { it.isNotEmpty() }) }
+    if (calendars.isEmpty()) return message
+    return context.getString(R.string.core_error_calendar, calendars.joinToString("”, “"), message)
+}
+
+/** Starts with a capital letter and ends with a full stop, like the app's own messages. */
+private fun String.sentence(): String {
+    val text = trim().replaceFirstChar { it.uppercaseChar() }
+    return if (text.isEmpty() || text.last() in ".!?…") text else "$text."
 }
 
 @Composable
