@@ -74,11 +74,7 @@ fun TagDialog(
         return
     }
 
-    FormDialog(
-        onDismiss,
-        if (target.tag == null) stringResource(R.string.create_tag, target.calendar)
-        else stringResource(R.string.edit_tag, target.tag.name),
-    ) {
+    FormDialog(onDismiss) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             FormTextField(
                 value = if (untagged) stringResource(R.string.tag_untagged) else name,

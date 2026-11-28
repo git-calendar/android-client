@@ -36,8 +36,6 @@
     <string name="optional">nepovinné</string>
 
     <string name="event_new">Nová událost</string>
-    <string name="event_edit">Upravit událost</string>
-    <string name="event_view">Událost</string>
     <string name="event_title">Název</string>
     <string name="event_description">Popis</string>
     <string name="event_location">Lokace</string>

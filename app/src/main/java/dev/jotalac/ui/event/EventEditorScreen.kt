@@ -110,13 +110,6 @@ fun EventEditorScreen(vm: EventEditorViewModel, settings: Settings, onClose: () 
     // Read-only events fade their fields only slightly, so the values stay readable.
     CompositionLocalProvider(LocalDisabledAlpha provides if (vm.readonly) 0.85f else LocalDisabledAlpha.current) {
         FormDialogContent(
-            stringResource(
-                when {
-                    vm.readonly -> R.string.event_view
-                    vm.isNew -> R.string.event_new
-                    else -> R.string.event_edit
-                }
-            ),
             wide = true,
         ) {
             if (vm.readonly) FormHint(stringResource(R.string.event_readonly), color = GitOrange)

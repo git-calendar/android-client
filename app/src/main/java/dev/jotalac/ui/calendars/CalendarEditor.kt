@@ -258,11 +258,7 @@ fun CalendarEditorScreen(vm: CalendarEditorViewModel, onClose: () -> Unit) {
         }
     }
 
-    FormDialogContent(
-        if (vm.isNew) stringResource(R.string.create_calendar)
-        else stringResource(R.string.edit_calendar, vm.existing?.name.orEmpty()),
-        wide = true,
-    ) {
+    FormDialogContent(wide = true) {
         if (vm.isNew) {
             FormToggle(
                 CreateMode.entries.map { stringResource(it.label) to it }, vm.mode, { vm.mode = it }, Modifier.fillMaxWidth(),

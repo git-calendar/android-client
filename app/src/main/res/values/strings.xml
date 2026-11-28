@@ -44,8 +44,6 @@
 
     <!-- Event editor -->
     <string name="event_new">New Event</string>
-    <string name="event_edit">Edit event</string>
-    <string name="event_view">Event</string>
     <string name="event_title">Title</string>
     <string name="event_description">Description</string>
     <string name="event_location">Location</string>
