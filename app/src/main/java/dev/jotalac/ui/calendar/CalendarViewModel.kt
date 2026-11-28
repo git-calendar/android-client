@@ -270,11 +270,11 @@ class CalendarViewModel(
         }
     }
 
-    fun removeTag(target: TagEditTarget) {
+    fun removeTag(target: TagEditTarget, deleteEvents: Boolean, moveToId: String) {
         val id = target.tag?.id?.takeIf { it.isNotEmpty() } ?: return
         viewModelScope.launch {
             try {
-                container.core.removeTag(target.calendar, id)
+                container.core.removeTag(target.calendar, id, deleteEvents, moveToId)
                 container.reloadCalendars()
                 container.sync.requestSync()
             } catch (e: Exception) {

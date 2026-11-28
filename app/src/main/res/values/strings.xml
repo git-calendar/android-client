@@ -154,6 +154,9 @@
     <string name="tag_name">Name</string>
     <string name="tag_color">Color</string>
     <string name="tag_untagged">Untagged</string>
+    <string name="tag_delete_events_question">What should happen to events tagged \"%1$s\"?</string>
+    <string name="tag_move_to">Move to</string>
+    <string name="tag_delete_events">Delete them</string>
     <string name="tag_create">Create tag</string>
     <string name="error_tag_name_required">Enter a tag name.</string>
 
@@ -230,22 +233,6 @@
     <string name="widget_label">Upcoming events</string>
     <string name="widget_description">Your events for the next 30 days</string>
     <string name="widget_nothing_scheduled">Nothing scheduled</string>
-    <!-- The core's error codes ("NETWORK: …"), see core/pkg/errcode -->
-    <string name="core_error_network">Could not reach the remote service. Check the URL and your network connection, then try again.</string>
-    <string name="core_error_proxy">Could not reach the CORS proxy. Check that it is running and that its URL is correct, then try again.</string>
-    <string name="core_error_auth">Authentication failed. Check your credentials and try again.</string>
-    <string name="core_error_forbidden">Access to this remote was denied. Check the URL and your permissions, then try again.</string>
-    <string name="core_error_rate_limit">Too many requests were sent to the remote service. Wait a moment and try again.</string>
-    <string name="core_error_validation">The operation contains invalid data. Check your input and try again.</string>
-    <string name="core_error_storage">Calendar data could not be read or saved. Check the available storage and try again.</string>
-    <string name="core_error_calendar_exists">A calendar with this name already exists. Choose another name.</string>
-    <string name="core_error_calendar_not_found">The calendar no longer exists.</string>
-    <string name="core_error_readonly">This calendar is read-only.</string>
-    <string name="core_error_event_not_found">The event no longer exists. It may have been deleted or changed elsewhere.</string>
-    <string name="core_error_tag_exists">A tag with this name already exists.</string>
-    <string name="core_error_tag_not_found">The tag no longer exists.</string>
-    <string name="core_error_name_required">Enter a name.</string>
-    <string name="core_error_decryption">The calendar data could not be decrypted. Check the encryption key.</string>
     <!-- The core's error codes ("NETWORK: …"), see core/pkg/errcode -->
     <string name="core_error_network">Could not reach the remote service. Check the URL and your network connection, then try again.</string>
     <string name="core_error_proxy">Could not reach the CORS proxy. Check that it is running and that its URL is correct, then try again.</string>

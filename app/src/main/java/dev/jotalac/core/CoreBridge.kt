@@ -99,7 +99,9 @@ class CoreBridge(private val dataDir: File) {
         call { CoreJson.decodeFromString<Tag>(createTag(calendar, CoreJson.encodeToString(tag))) }
     suspend fun updateTag(calendar: String, tag: Tag): Tag =
         call { CoreJson.decodeFromString<Tag>(updateTag(calendar, CoreJson.encodeToString(tag))) }
-    suspend fun removeTag(calendar: String, id: String) = call { removeTag(calendar, id) }
+    /** Events with the tag are deleted if [deleteEvents], otherwise moved to [moveToId] ("" = untagged). */
+    suspend fun removeTag(calendar: String, id: String, deleteEvents: Boolean, moveToId: String) =
+        call { removeTag(calendar, id, deleteEvents, moveToId) }
 
     private fun encode(event: Event): String = CoreJson.encodeToString(event)
     private fun decodeEvent(json: String): Event = CoreJson.decodeFromString(json)

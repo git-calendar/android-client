@@ -264,8 +264,10 @@ fun CalendarScreen(vm: CalendarViewModel, nav: CalendarNavigation) {
         TagDialog(
             target = target,
             defaultColor = settings.defaultEventColor,
+            otherTags = calendars.find { it.name == target.calendar }?.tagList.orEmpty().filter { it.id != target.tag?.id },
+            untaggedColor = settings.untaggedColors[target.calendar] ?: settings.defaultEventColor,
             onSave = { name, color -> vm.saveTag(target, name, color) },
-            onDelete = { vm.removeTag(target) },
+            onDelete = { deleteEvents, moveToId -> vm.removeTag(target, deleteEvents, moveToId) },
             onDismiss = { tagTarget = null },
         )
     }
